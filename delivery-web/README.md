@@ -31,9 +31,9 @@ Acesse `http://localhost:3000` para a pagina de pedidos, e `http://localhost:300
    Project Settings → Root Directory).
 3. Configure as variaveis de ambiente do projeto na Vercel: `DATABASE_URL`, `ADMIN_PASSWORD`,
    `SESSION_SECRET`, `PDV_SYNC_TOKEN` (gere valores aleatorios para os dois ultimos, ex:
-   `openssl rand -hex 32`).
-4. Apos o primeiro deploy, rode `npx prisma db push` apontando para o `DATABASE_URL` de producao (ou
-   configure um passo de build que faça isso).
+   `openssl rand -hex 24`).
+4. Deploy. O script `vercel-build` ja roda `prisma db push` automaticamente a cada deploy, criando/
+   atualizando as tabelas no Postgres configurado — nao precisa rodar nada manualmente.
 5. Acesse `/admin`, entre com `ADMIN_PASSWORD` e cadastre o cardapio e o endereco da loja.
 
 ## Como os pedidos chegam no PDV
