@@ -13,6 +13,12 @@ const DEFAULT_CONFIG: AppConfig = {
     ufEmitente: 'SP',
     csc: '',
     cscId: ''
+  },
+  delivery: {
+    ativo: false,
+    apiUrl: '',
+    syncToken: '',
+    intervaloSegundos: 30
   }
 }
 

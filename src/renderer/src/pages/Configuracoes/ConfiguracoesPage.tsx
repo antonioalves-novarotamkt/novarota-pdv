@@ -5,7 +5,8 @@ import type { AppConfig, Mesa } from '../../../../shared/types'
 const CONFIG_VAZIA: AppConfig = {
   loja: { nomeFantasia: '', razaoSocial: '', cnpj: '', endereco: '' },
   impressora: { tipo: 'nenhuma', largura: 48 },
-  fiscal: { ambiente: 'homologacao', focusNfeToken: '', cnpjEmitente: '', ufEmitente: 'SP', csc: '', cscId: '' }
+  fiscal: { ambiente: 'homologacao', focusNfeToken: '', cnpjEmitente: '', ufEmitente: 'SP', csc: '', cscId: '' },
+  delivery: { ativo: false, apiUrl: '', syncToken: '', intervaloSegundos: 30 }
 }
 
 export default function ConfiguracoesPage(): JSX.Element {
@@ -13,6 +14,8 @@ export default function ConfiguracoesPage(): JSX.Element {
   const [salvando, setSalvando] = useState(false)
   const [mensagemImpressora, setMensagemImpressora] = useState<string | null>(null)
   const [mensagemFiscal, setMensagemFiscal] = useState<string | null>(null)
+  const [mensagemDelivery, setMensagemDelivery] = useState<string | null>(null)
+  const [sincronizando, setSincronizando] = useState(false)
 
   const [mesas, setMesas] = useState<Mesa[]>([])
   const [novaMesa, setNovaMesa] = useState('')
@@ -41,6 +44,21 @@ export default function ConfiguracoesPage(): JSX.Element {
     setMensagemFiscal('Testando...')
     const resultado = await api.config.testarFiscal()
     setMensagemFiscal(resultado.mensagem)
+  }
+
+  async function sincronizarDeliveryAgora(): Promise<void> {
+    setSincronizando(true)
+    setMensagemDelivery('Sincronizando...')
+    try {
+      const resultado = await api.config.sincronizarDeliveryAgora()
+      setMensagemDelivery(
+        resultado.ok
+          ? `${resultado.importados} pedido(s) importado(s) como comanda.`
+          : resultado.mensagemErro ?? 'Falha ao sincronizar.'
+      )
+    } finally {
+      setSincronizando(false)
+    }
   }
 
   async function adicionarMesa(): Promise<void> {
@@ -209,6 +227,56 @@ export default function ConfiguracoesPage(): JSX.Element {
             Testar conexao
           </button>
           {mensagemFiscal && <span className="text-xs text-slate-500">{mensagemFiscal}</span>}
+        </div>
+      </section>
+
+      <section className="rounded-lg border bg-white p-4">
+        <h3 className="mb-3 font-semibold">Delivery (pedidos online)</h3>
+        <p className="mb-3 text-xs text-slate-500">
+          Conecta com o site de delivery (novarota-delivery) para puxar pedidos automaticamente como
+          comandas. Preencha a URL do site publicado e o mesmo token configurado la (PDV_SYNC_TOKEN).
+        </p>
+        <label className="mb-3 flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={config.delivery.ativo}
+            onChange={(e) => setConfig({ ...config, delivery: { ...config.delivery, ativo: e.target.checked } })}
+          />
+          Sincronizacao automatica ativa
+        </label>
+        <div className="grid grid-cols-2 gap-3">
+          <input
+            placeholder="URL do site de delivery (ex: https://meudelivery.vercel.app)"
+            value={config.delivery.apiUrl}
+            onChange={(e) => setConfig({ ...config, delivery: { ...config.delivery, apiUrl: e.target.value } })}
+            className="col-span-2 rounded border px-2 py-1 text-sm"
+          />
+          <input
+            placeholder="Token de sincronizacao (PDV_SYNC_TOKEN)"
+            value={config.delivery.syncToken}
+            onChange={(e) => setConfig({ ...config, delivery: { ...config.delivery, syncToken: e.target.value } })}
+            className="rounded border px-2 py-1 text-sm"
+          />
+          <input
+            type="number"
+            min={10}
+            placeholder="Intervalo (segundos)"
+            value={config.delivery.intervaloSegundos}
+            onChange={(e) =>
+              setConfig({ ...config, delivery: { ...config.delivery, intervaloSegundos: Number(e.target.value) } })
+            }
+            className="rounded border px-2 py-1 text-sm"
+          />
+        </div>
+        <div className="mt-3 flex items-center gap-3">
+          <button
+            onClick={sincronizarDeliveryAgora}
+            disabled={sincronizando}
+            className="rounded border px-3 py-1 text-sm disabled:opacity-50"
+          >
+            Sincronizar agora
+          </button>
+          {mensagemDelivery && <span className="text-xs text-slate-500">{mensagemDelivery}</span>}
         </div>
       </section>
 

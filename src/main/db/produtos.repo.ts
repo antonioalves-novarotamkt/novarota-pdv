@@ -66,3 +66,18 @@ export function ajustarEstoqueProduto(produtoId: number, delta: number): void {
     .prepare('UPDATE produtos SET quantidade_estoque = quantidade_estoque + ? WHERE id = ?')
     .run(delta, produtoId)
 }
+
+/**
+ * Usado pela sincronizacao de delivery: o catalogo do site de pedidos ainda e
+ * separado do catalogo do PDV, entao ao importar um pedido criamos o produto
+ * localmente na primeira vez que o nome aparece (sem controle de estoque).
+ */
+export function encontrarOuCriarProdutoPorNome(nome: string, preco: number): Produto {
+  const db = getDb()
+  const existente = db
+    .prepare('SELECT * FROM produtos WHERE lower(nome) = lower(?) LIMIT 1')
+    .get(nome) as Produto | undefined
+  if (existente) return existente
+
+  return salvarProduto({ nome, categoria_id: null, preco, controla_estoque: false })
+}

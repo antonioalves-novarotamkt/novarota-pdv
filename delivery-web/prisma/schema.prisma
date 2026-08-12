@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Produto {
+  id        String        @id @default(cuid())
+  nome      String
+  descricao String?
+  preco     Float
+  categoria String        @default("Cardapio")
+  ativo     Boolean       @default(true)
+  ordem     Int           @default(0)
+  criadoEm  DateTime      @default(now())
+  itens     PedidoItem[]
+}
+
+model ConfiguracaoLoja {
+  id              String   @id @default("config")
+  nomeFantasia    String   @default("")
+  telefone        String   @default("")
+  enderecoLoja    String   @default("")
+  latitudeLoja    Float?
+  longitudeLoja   Float?
+  raioMaximoKm    Float    @default(8)
+  faixasTaxa      Json     @default("[{\"ateKm\":3,\"taxa\":6},{\"ateKm\":6,\"taxa\":9},{\"ateKm\":8,\"taxa\":14}]")
+  tempoEstimadoMin Int     @default(45)
+  aceitandoPedidos Boolean @default(true)
+  atualizadoEm    DateTime @updatedAt
+}
+
+enum StatusPedido {
+  recebido
+  preparo
+  saiu_entrega
+  entregue
+  cancelado
+}
+
+enum FormaPagamentoPedido {
+  dinheiro
+  cartao_entrega
+}
+
+model Pedido {
+  id               String                @id @default(cuid())
+  clienteNome      String
+  clienteTelefone  String
+  enderecoEntrega  String
+  latitude         Float?
+  longitude        Float?
+  distanciaKm      Float?
+  taxaEntrega      Float
+  totalProdutos    Float
+  total            Float
+  formaPagamento   FormaPagamentoPedido
+  trocoPara        Float?
+  observacoes      String?
+  status           StatusPedido          @default(recebido)
+  sincronizadoPdv  Boolean               @default(false)
+  criadoEm         DateTime              @default(now())
+  itens            PedidoItem[]
+}
+
+model PedidoItem {
+  id             String   @id @default(cuid())
+  pedido         Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  pedidoId       String
+  produto        Produto? @relation(fields: [produtoId], references: [id], onDelete: SetNull)
+  produtoId      String?
+  nomeProduto    String
+  quantidade     Int
+  precoUnitario  Float
+}

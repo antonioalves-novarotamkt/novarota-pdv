@@ -3,6 +3,7 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { initDatabase } from './db'
 import { registerIpcHandlers } from './ipc'
+import { iniciarSyncDelivery } from './sync/deliverySync'
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -43,6 +44,7 @@ app.whenReady().then(() => {
 
   initDatabase()
   registerIpcHandlers()
+  iniciarSyncDelivery()
 
   createWindow()
 

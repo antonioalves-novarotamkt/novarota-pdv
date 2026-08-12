@@ -148,10 +148,24 @@ export interface ConfiguracoesLoja {
   endereco: string
 }
 
+export interface ConfiguracoesDelivery {
+  ativo: boolean
+  apiUrl: string
+  syncToken: string
+  intervaloSegundos: number
+}
+
 export interface AppConfig {
   loja: ConfiguracoesLoja
   impressora: ConfiguracoesImpressora
   fiscal: ConfiguracoesFiscal
+  delivery: ConfiguracoesDelivery
+}
+
+export interface ResultadoSincronizacaoDelivery {
+  ok: boolean
+  importados: number
+  mensagemErro?: string
 }
 
 export interface ResultadoFinalizarVenda {
@@ -184,5 +198,6 @@ export const IPC = {
   CONFIG_OBTER: 'config:obter',
   CONFIG_SALVAR: 'config:salvar',
   IMPRESSORA_TESTAR: 'impressora:testar',
-  FISCAL_TESTAR_CONEXAO: 'fiscal:testarConexao'
+  FISCAL_TESTAR_CONEXAO: 'fiscal:testarConexao',
+  DELIVERY_SINCRONIZAR_AGORA: 'delivery:sincronizarAgora'
 } as const

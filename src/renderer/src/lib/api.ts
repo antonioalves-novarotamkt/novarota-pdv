@@ -11,6 +11,7 @@ import type {
   Produto,
   ProdutoInput,
   ResultadoFinalizarVenda,
+  ResultadoSincronizacaoDelivery,
   Venda,
   VendaCompleta
 } from '../../../shared/types'
@@ -66,7 +67,9 @@ export const api = {
     obter: () => invoke<AppConfig>(IPC.CONFIG_OBTER),
     salvar: (config: AppConfig) => invoke<AppConfig>(IPC.CONFIG_SALVAR, config),
     testarFiscal: () => invoke<{ ok: boolean; mensagem: string }>(IPC.FISCAL_TESTAR_CONEXAO),
-    testarImpressora: () => invoke<{ ok: boolean; mensagem: string }>(IPC.IMPRESSORA_TESTAR)
+    testarImpressora: () => invoke<{ ok: boolean; mensagem: string }>(IPC.IMPRESSORA_TESTAR),
+    sincronizarDeliveryAgora: () =>
+      invoke<ResultadoSincronizacaoDelivery>(IPC.DELIVERY_SINCRONIZAR_AGORA)
   }
 }
 

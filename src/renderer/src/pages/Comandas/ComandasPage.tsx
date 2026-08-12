@@ -130,9 +130,18 @@ export default function ComandasPage(): JSX.Element {
               className="rounded-lg border border-slate-200 bg-white p-4 text-left shadow-sm"
             >
               <p className="font-medium">
-                Comanda #{comanda.id} - {comanda.tipo}
+                Comanda #{comanda.id}
+                {comanda.tipo === 'delivery' && (
+                  <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                    Delivery
+                  </span>
+                )}
+                {comanda.tipo === 'balcao' && ' - Balcao'}
               </p>
-              <p className="text-sm text-slate-500">{formatarMoeda(comanda.total)}</p>
+              {comanda.observacao && (
+                <p className="mt-1 truncate text-xs text-slate-500">{comanda.observacao}</p>
+              )}
+              <p className="mt-1 text-sm text-slate-500">{formatarMoeda(comanda.total)}</p>
             </button>
           ))}
         </div>
@@ -146,6 +155,11 @@ export default function ComandasPage(): JSX.Element {
               {comandaSelecionada.mesa_id &&
                 ` - Mesa ${mesas.find((m) => m.id === comandaSelecionada.mesa_id)?.numero ?? ''}`}
             </h3>
+            {comandaSelecionada.observacao && (
+              <p className="mt-1 whitespace-pre-line rounded bg-amber-50 px-2 py-1 text-xs text-amber-800">
+                {comandaSelecionada.observacao}
+              </p>
+            )}
           </div>
 
           <div className="flex-1 space-y-3 overflow-y-auto px-4 py-3">

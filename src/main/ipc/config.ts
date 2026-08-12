@@ -3,12 +3,19 @@ import { IPC } from '../../shared/types'
 import { obterConfig, salvarConfig } from '../db/config.repo'
 import { FocusNfeClient } from '../fiscal/focusNfeClient'
 import { imprimirVenda } from '../printing'
+import { reiniciarSyncDelivery, sincronizarPedidosDelivery } from '../sync/deliverySync'
 import type { AppConfig } from '../../shared/types'
 
 export function registrarIpcConfig(): void {
   ipcMain.handle(IPC.CONFIG_OBTER, () => obterConfig())
 
-  ipcMain.handle(IPC.CONFIG_SALVAR, (_event, config: AppConfig) => salvarConfig(config))
+  ipcMain.handle(IPC.CONFIG_SALVAR, (_event, config: AppConfig) => {
+    const salvo = salvarConfig(config)
+    reiniciarSyncDelivery()
+    return salvo
+  })
+
+  ipcMain.handle(IPC.DELIVERY_SINCRONIZAR_AGORA, () => sincronizarPedidosDelivery())
 
   ipcMain.handle(IPC.FISCAL_TESTAR_CONEXAO, async () => {
     const config = obterConfig()
