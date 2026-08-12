@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sessaoAdminValida } from '@/lib/auth'
-import { cepParaNumero } from '@/lib/viacep'
 
 interface Params {
   params: { id: string }
@@ -11,18 +10,16 @@ export async function PATCH(request: Request, { params }: Params): Promise<NextR
   if (!sessaoAdminValida()) return NextResponse.json({ erro: 'Nao autorizado.' }, { status: 401 })
   const body = await request.json()
 
-  const area = await prisma.areaEntrega.update({
+  const camada = await prisma.areaEntrega.update({
     where: { id: params.id },
     data: {
-      descricao: body.descricao,
-      cepInicio: body.cepInicio !== undefined ? cepParaNumero(String(body.cepInicio)) : undefined,
-      cepFim: body.cepFim !== undefined ? cepParaNumero(String(body.cepFim)) : undefined,
+      raioKm: body.raioKm,
       taxa: body.taxa,
       tempoEstimadoMin: body.tempoEstimadoMin,
       ativo: body.ativo
     }
   })
-  return NextResponse.json(area)
+  return NextResponse.json(camada)
 }
 
 export async function DELETE(_request: Request, { params }: Params): Promise<NextResponse> {

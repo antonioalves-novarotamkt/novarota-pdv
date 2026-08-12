@@ -25,7 +25,7 @@ interface PedidoRemoto {
   cidade: string
   uf: string
   pontoReferencia: string | null
-  areaEntregaDescricao: string
+  distanciaKm: number | null
   taxaEntrega: number
   formaPagamento: 'dinheiro' | 'cartao_entrega'
   trocoPara: number | null
@@ -48,7 +48,7 @@ function montarObservacaoComanda(pedido: PedidoRemoto): string {
     `Cliente: ${pedido.clienteNome}`,
     `Tel: ${pedido.clienteTelefone}`,
     `Endereco: ${montarEnderecoCompleto(pedido)}`,
-    `Area: ${pedido.areaEntregaDescricao}`,
+    ...(pedido.distanciaKm ? [`Distancia: ${pedido.distanciaKm.toFixed(1)} km`] : []),
     `Pagamento na entrega: ${pedido.formaPagamento === 'dinheiro' ? 'Dinheiro' : 'Cartao (maquininha)'}`
   ]
   if (pedido.pontoReferencia) {

@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { buscarEnderecoPorCep } from '@/lib/viacep'
-import { encontrarAreaPorCep } from '@/lib/areaEntrega'
+import { geocodificarEndereco, calcularDistanciaKm } from '@/lib/mapbox'
+import { encontrarCamadaPorDistancia } from '@/lib/areaEntrega'
 import type { CriarPedidoInput, CriarPedidoResponse } from '@/lib/types'
 
 export async function POST(request: Request): Promise<NextResponse> {
@@ -24,17 +25,33 @@ export async function POST(request: Request): Promise<NextResponse> {
   if (!config.aceitandoPedidos) {
     return NextResponse.json({ erro: 'A loja nao esta aceitando pedidos no momento.' }, { status: 503 })
   }
+  if (!config.latitudeLoja || !config.longitudeLoja) {
+    return NextResponse.json({ erro: 'Area de entrega ainda nao configurada pela loja.' }, { status: 503 })
+  }
 
-  // Endereco e taxa sempre recalculados no servidor a partir do CEP, ignorando qualquer valor
-  // de frete enviado pelo cliente.
+  // Endereco, distancia e taxa sempre recalculados no servidor a partir do CEP + geocoding,
+  // ignorando qualquer valor de frete enviado pelo cliente.
   const enderecoCep = await buscarEnderecoPorCep(body.endereco.cep)
   if (!enderecoCep) {
     return NextResponse.json({ erro: 'CEP informado nao foi encontrado.' }, { status: 422 })
   }
 
-  const area = await encontrarAreaPorCep(body.endereco.cep)
-  if (!area) {
-    return NextResponse.json({ erro: 'Esse CEP esta fora da nossa area de entrega.' }, { status: 422 })
+  const numero = body.endereco.semNumero ? '' : body.endereco.numero
+  const enderecoCompleto = [enderecoCep.rua, numero, enderecoCep.bairro, enderecoCep.cidade, enderecoCep.uf]
+    .filter(Boolean)
+    .join(', ')
+  const coordenadas = await geocodificarEndereco(enderecoCompleto)
+  if (!coordenadas) {
+    return NextResponse.json({ erro: 'Nao conseguimos localizar o endereco informado no mapa.' }, { status: 422 })
+  }
+
+  const distanciaKm = calcularDistanciaKm(
+    { latitude: config.latitudeLoja, longitude: config.longitudeLoja },
+    coordenadas
+  )
+  const camada = await encontrarCamadaPorDistancia(distanciaKm)
+  if (!camada) {
+    return NextResponse.json({ erro: 'Esse endereco esta fora da nossa area de entrega.' }, { status: 422 })
   }
 
   // Preco e disponibilidade tambem sempre recalculados a partir do banco.
@@ -65,7 +82,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     )
   }
 
-  const total = totalProdutos + area.taxa
+  const total = totalProdutos + camada.taxa
 
   if (body.formaPagamento === 'dinheiro' && body.trocoPara != null && body.trocoPara < total) {
     return NextResponse.json({ erro: 'O valor para troco deve ser maior ou igual ao total do pedido.' }, { status: 400 })
@@ -84,8 +101,10 @@ export async function POST(request: Request): Promise<NextResponse> {
       cidade: enderecoCep.cidade,
       uf: enderecoCep.uf,
       pontoReferencia: body.endereco.pontoReferencia?.trim() || null,
-      areaEntregaDescricao: area.descricao,
-      taxaEntrega: area.taxa,
+      latitude: coordenadas.latitude,
+      longitude: coordenadas.longitude,
+      distanciaKm: Number(distanciaKm.toFixed(2)),
+      taxaEntrega: camada.taxa,
       totalProdutos,
       total,
       formaPagamento: body.formaPagamento,
@@ -99,7 +118,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     id: pedido.id,
     total: pedido.total,
     taxaEntrega: pedido.taxaEntrega,
-    tempoEstimadoMin: area.tempoEstimadoMin
+    tempoEstimadoMin: camada.tempoEstimadoMin
   }
   return NextResponse.json(resposta, { status: 201 })
 }

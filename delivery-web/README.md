@@ -1,28 +1,45 @@
 # NovaRota Delivery
 
 Site publico de pedidos online (delivery) para uma loja/restaurante: cardapio, carrinho, calculo de
-frete por CEP (areas de entrega nomeadas) e pagamento na entrega. Os pedidos ficam disponiveis para o
-**NovaRota PDV** (a app desktop na raiz deste repositorio) puxar automaticamente via sincronizacao.
+frete por raio de distancia da loja (estilo iFood) e pagamento na entrega. Os pedidos ficam disponiveis
+para o **NovaRota PDV** (a app desktop na raiz deste repositorio) puxar automaticamente via sincronizacao.
 
 ## Stack
 
 - Next.js 14 (App Router) + TypeScript + Tailwind
 - Prisma + PostgreSQL (hospedar em Vercel Postgres, Neon ou Supabase — qualquer Postgres serve)
-- Consulta de endereco via [ViaCEP](https://viacep.com.br) (servico publico brasileiro gratuito, sem
-  necessidade de chave de API) — o cliente digita o CEP, o sistema preenche rua/bairro/cidade e calcula
-  a taxa de entrega pela area de CEP cadastrada pelo admin
+- [ViaCEP](https://viacep.com.br) (servico publico brasileiro gratuito, sem chave de API) para
+  autopreencher rua/bairro/cidade a partir do CEP digitado pelo cliente
+- [Mapbox](https://www.mapbox.com) (Geocoding API + mapa interativo) para converter o endereco
+  confirmado em coordenadas, calcular a distancia ate a loja e exibir o mapa no admin e no checkout
 
-## Areas de entrega
+## Areas de entrega (por raio, estilo iFood)
 
-Em vez de geocodificar o endereco e calcular distancia (menos confiavel para enderecos brasileiros), a
-taxa de entrega e definida por **faixas de CEP** cadastradas em `/admin/areas-entrega` — cada area tem
-uma descricao, CEP inicial/final, taxa e tempo estimado proprios. E o mesmo modelo usado por sistemas
-como Consumer/MenuDino.
+A taxa de entrega e definida por **camadas de raio** cadastradas em `/admin/areas-entrega`: cada
+camada tem um raio em km, uma taxa e um tempo estimado proprios (ex: ate 1km = R$5/30min, ate 2km =
+R$8/40min). O cliente paga a taxa da menor camada que alcance o endereco confirmado dele. A tela mostra
+um mapa com a loja e os aneis de cada camada sobrepostos, alem de botoes de ajuste rapido (+/- min,
++/- R$) para editar cada camada — inspirado na tela de "Configuracoes de entrega" do portal do parceiro
+iFood.
+
+No checkout, depois do CEP + numero, o site geocodifica o endereco completo e mostra um mapa com o pino
+da localizacao para o cliente confirmar antes de calcular a taxa final (assim como o MenuDino faz).
+
+## Configurando o Mapbox
+
+1. Crie uma conta gratuita em [mapbox.com](https://account.mapbox.com/auth/signup/) (nao pede cartao de
+   credito para o tier gratuito, que cobre 50 mil carregamentos de mapa/mes).
+2. Va em **Tokens** no painel da Mapbox e copie o "Default public token" (comeca com `pk.`).
+3. Configure as variaveis `MAPBOX_TOKEN` e `NEXT_PUBLIC_MAPBOX_TOKEN` (mesmo valor nas duas) no `.env`
+   local ou nas variaveis de ambiente da Vercel.
+
+Sem o token configurado, o mapa mostra uma mensagem explicando o que falta, e o calculo de frete retorna
+um erro claro em vez de quebrar a pagina.
 
 ## Rodando localmente
 
 ```bash
-cp .env.example .env   # preencha DATABASE_URL, ADMIN_PASSWORD, SESSION_SECRET, PDV_SYNC_TOKEN
+cp .env.example .env   # preencha DATABASE_URL, ADMIN_PASSWORD, SESSION_SECRET, PDV_SYNC_TOKEN, MAPBOX_TOKEN
 npm install
 npm run db:push        # cria as tabelas no Postgres configurado
 npm run dev
@@ -39,11 +56,13 @@ Acesse `http://localhost:3000` para a pagina de pedidos, e `http://localhost:300
    Project Settings → Root Directory).
 3. Configure as variaveis de ambiente do projeto na Vercel: `DATABASE_URL`, `ADMIN_PASSWORD`,
    `SESSION_SECRET`, `PDV_SYNC_TOKEN` (gere valores aleatorios para os dois ultimos, ex:
-   `openssl rand -hex 24`).
+   `openssl rand -hex 24`), `MAPBOX_TOKEN` e `NEXT_PUBLIC_MAPBOX_TOKEN` (veja "Configurando o Mapbox"
+   acima).
 4. Deploy. O script `vercel-build` ja roda `prisma db push` automaticamente a cada deploy, criando/
    atualizando as tabelas no Postgres configurado — nao precisa rodar nada manualmente.
-5. Acesse `/admin`, entre com `ADMIN_PASSWORD`, cadastre o cardapio (ou aguarde a sincronizacao do PDV)
-   e cadastre pelo menos uma area de entrega em `/admin/areas-entrega` — sem isso nenhum CEP consegue
+5. Acesse `/admin`, entre com `ADMIN_PASSWORD`, preencha o endereco da loja em Configuracoes (isso
+   geocodifica a origem do calculo de raio), cadastre o cardapio (ou aguarde a sincronizacao do PDV) e
+   cadastre pelo menos uma camada de raio em `/admin/areas-entrega` — sem isso nenhum endereco consegue
    finalizar pedido.
 
 ## Como os pedidos chegam no PDV
@@ -76,9 +95,11 @@ publicamente com dados reais de clientes.
 
 ## Limitacoes atuais / proximos passos
 
-- Areas de entrega sao faixas de CEP simples (sem desenhar poligono num mapa, como o Consumer permite).
-  Cobre a maioria dos casos, mas bairros que nao seguem uma faixa continua de CEP podem exigir varias
-  areas cadastradas.
+- As camadas de entrega sao aneis concentricos (raio em linha reta da loja), nao poligonos desenhados a
+  mao no mapa como o "Personalizar areas" do iFood permite. Cobre bem a maioria dos casos, mas nao da
+  pra excluir uma rua especifica dentro do raio, por exemplo.
+- A distancia e em linha reta (haversine), nao a distancia real de rota — um raio de 2km pode, na
+  pratica, ser uma rota de carro mais longa dependendo da regiao.
 - Nao ha combos/modificadores de produto (ex: "escolha o sabor", com preco adicional por opcao) nem
   promocoes (preco riscado) — vistos em referencias como MenuDino, ficam como proximo passo.
 - Pagamento é sempre na entrega (dinheiro ou cartão via maquininha). Pagamento online (Pix/cartão no site)

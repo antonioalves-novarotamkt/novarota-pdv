@@ -4,10 +4,12 @@ import { useEffect, useMemo, useState } from 'react'
 import type {
   CardapioResponse,
   CriarPedidoResponse,
+  EnderecoViaCepResponse,
   FormaPagamentoPedido,
   FreteResponse,
   ProdutoPublico
 } from '@/lib/types'
+import MapaRaio from '@/components/MapaRaio'
 
 interface ItemCarrinho extends ProdutoPublico {
   quantidade: number
@@ -23,10 +25,12 @@ function formatarCep(valor: string): string {
   return `${digitos.slice(0, 5)}-${digitos.slice(5)}`
 }
 
+type Etapa = 'cardapio' | 'endereco' | 'confirmarLocal' | 'checkout' | 'confirmado'
+
 export default function PaginaPedido(): JSX.Element {
   const [cardapio, setCardapio] = useState<CardapioResponse | null>(null)
   const [carrinho, setCarrinho] = useState<ItemCarrinho[]>([])
-  const [etapa, setEtapa] = useState<'cardapio' | 'endereco' | 'checkout' | 'confirmado'>('cardapio')
+  const [etapa, setEtapa] = useState<Etapa>('cardapio')
 
   const [nome, setNome] = useState('')
   const [telefone, setTelefone] = useState('')
@@ -39,8 +43,10 @@ export default function PaginaPedido(): JSX.Element {
   const [trocoPara, setTrocoPara] = useState('')
   const [observacoes, setObservacoes] = useState('')
 
+  const [enderecoCep, setEnderecoCep] = useState<EnderecoViaCepResponse | null>(null)
   const [frete, setFrete] = useState<FreteResponse | null>(null)
   const [buscandoCep, setBuscandoCep] = useState(false)
+  const [confirmandoLocal, setConfirmandoLocal] = useState(false)
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
   const [resultado, setResultado] = useState<CriarPedidoResponse | null>(null)
@@ -77,7 +83,7 @@ export default function PaginaPedido(): JSX.Element {
     )
   }
 
-  async function buscarFrete(): Promise<void> {
+  async function buscarCep(): Promise<void> {
     const cepLimpo = cep.replace(/\D/g, '')
     if (cepLimpo.length !== 8) {
       setErro('Informe um CEP valido (8 digitos).')
@@ -85,20 +91,54 @@ export default function PaginaPedido(): JSX.Element {
     }
     setErro(null)
     setBuscandoCep(true)
+    setEnderecoCep(null)
+    try {
+      const resp = await fetch('/api/cep', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cep: cepLimpo })
+      })
+      const dados = (await resp.json()) as EnderecoViaCepResponse
+      setEnderecoCep(dados)
+      if (!dados.encontrado) setErro(dados.mensagem ?? 'CEP nao encontrado.')
+    } catch {
+      setErro('Nao foi possivel buscar esse CEP agora. Tente novamente.')
+    } finally {
+      setBuscandoCep(false)
+    }
+  }
+
+  async function confirmarEndereco(): Promise<void> {
+    if (!enderecoCep?.encontrado) return
+    if (!numero.trim() && !semNumero) {
+      setErro('Informe o numero do endereco (ou marque "sem numero").')
+      return
+    }
+    setErro(null)
+    setConfirmandoLocal(true)
     setFrete(null)
     try {
       const resp = await fetch('/api/frete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cep: cepLimpo })
+        body: JSON.stringify({
+          rua: enderecoCep.rua,
+          numero,
+          semNumero,
+          complemento,
+          bairro: enderecoCep.bairro,
+          cidade: enderecoCep.cidade,
+          uf: enderecoCep.uf
+        })
       })
       const dados = (await resp.json()) as FreteResponse
       setFrete(dados)
-      if (!dados.dentroDaArea) setErro(dados.mensagem ?? 'Nao entregamos nesse CEP.')
+      setEtapa('confirmarLocal')
+      if (!dados.dentroDaArea) setErro(dados.mensagem ?? 'Nao entregamos nesse endereco.')
     } catch {
-      setErro('Nao foi possivel calcular o frete agora. Tente novamente.')
+      setErro('Nao foi possivel localizar o endereco agora. Tente novamente.')
     } finally {
-      setBuscandoCep(false)
+      setConfirmandoLocal(false)
     }
   }
 
@@ -108,11 +148,7 @@ export default function PaginaPedido(): JSX.Element {
       return
     }
     if (!frete?.dentroDaArea) {
-      setErro('Informe um CEP dentro da area de entrega antes de finalizar.')
-      return
-    }
-    if (!numero.trim() && !semNumero) {
-      setErro('Informe o numero do endereco (ou marque "sem numero").')
+      setErro('Confirme um endereco dentro da area de entrega antes de finalizar.')
       return
     }
     setErro(null)
@@ -126,13 +162,13 @@ export default function PaginaPedido(): JSX.Element {
           clienteTelefone: telefone,
           endereco: {
             cep: cep.replace(/\D/g, ''),
-            rua: frete.rua ?? '',
+            rua: enderecoCep?.rua ?? '',
             numero,
             semNumero,
             complemento: complemento || undefined,
-            bairro: frete.bairro ?? '',
-            cidade: frete.cidade ?? '',
-            uf: frete.uf ?? '',
+            bairro: enderecoCep?.bairro ?? '',
+            cidade: enderecoCep?.cidade ?? '',
+            uf: enderecoCep?.uf ?? '',
             pontoReferencia: pontoReferencia || undefined
           },
           itens: carrinho.map((i) => ({ produtoId: i.id, quantidade: i.quantidade })),
@@ -184,6 +220,7 @@ export default function PaginaPedido(): JSX.Element {
             setCarrinho([])
             setResultado(null)
             setFrete(null)
+            setEnderecoCep(null)
           }}
           className="mt-2 text-sm text-brand-600 underline"
         >
@@ -256,12 +293,12 @@ export default function PaginaPedido(): JSX.Element {
               value={formatarCep(cep)}
               onChange={(e) => {
                 setCep(e.target.value)
-                setFrete(null)
+                setEnderecoCep(null)
               }}
               className="flex-1 rounded border px-3 py-2 text-sm"
             />
             <button
-              onClick={buscarFrete}
+              onClick={buscarCep}
               disabled={buscandoCep}
               className="whitespace-nowrap rounded bg-slate-800 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
             >
@@ -269,21 +306,18 @@ export default function PaginaPedido(): JSX.Element {
             </button>
           </div>
 
-          {frete?.dentroDaArea && (
+          {enderecoCep?.encontrado && (
             <div className="rounded-lg border bg-white p-3 text-sm">
               <p className="font-medium">
-                {frete.rua}, {frete.bairro}
+                {enderecoCep.rua}, {enderecoCep.bairro}
               </p>
               <p className="text-slate-500">
-                {frete.cidade} - {frete.uf}
-              </p>
-              <p className="mt-1 text-emerald-700">
-                Taxa de entrega: {brl(frete.taxa ?? 0)} · Tempo estimado: {frete.tempoEstimadoMin}min
+                {enderecoCep.cidade} - {enderecoCep.uf}
               </p>
             </div>
           )}
 
-          {frete?.dentroDaArea && (
+          {enderecoCep?.encontrado && (
             <>
               <div className="flex gap-2">
                 <input
@@ -321,23 +355,60 @@ export default function PaginaPedido(): JSX.Element {
               {erro && <p className="rounded bg-red-50 px-3 py-2 text-sm text-red-700">{erro}</p>}
 
               <button
-                onClick={() => setEtapa('checkout')}
-                disabled={!numero.trim() && !semNumero}
+                onClick={confirmarEndereco}
+                disabled={(!numero.trim() && !semNumero) || confirmandoLocal}
                 className="w-full rounded-lg bg-brand-600 py-3 text-sm font-semibold text-white disabled:opacity-50"
               >
-                Continuar
+                {confirmandoLocal ? 'Localizando...' : 'Continuar'}
               </button>
             </>
           )}
 
-          {erro && !frete?.dentroDaArea && <p className="rounded bg-red-50 px-3 py-2 text-sm text-red-700">{erro}</p>}
+          {erro && !enderecoCep?.encontrado && <p className="rounded bg-red-50 px-3 py-2 text-sm text-red-700">{erro}</p>}
+        </div>
+      )}
+
+      {etapa === 'confirmarLocal' && (
+        <div className="space-y-4 px-4 py-4">
+          <button onClick={() => setEtapa('endereco')} className="text-sm text-brand-600">
+            ← Voltar ao endereco
+          </button>
+
+          <h2 className="text-base font-semibold">A localizacao esta correta?</h2>
+          <p className="text-sm text-slate-500">
+            {enderecoCep?.rua}, {semNumero ? 'S/N' : numero}
+            {complemento && ` - ${complemento}`} - {enderecoCep?.bairro}, {enderecoCep?.cidade}/{enderecoCep?.uf}
+          </p>
+
+          {frete?.latitude && frete?.longitude && (
+            <MapaRaio centro={{ lat: frete.latitude, lng: frete.longitude }} camadas={[]} altura={260} />
+          )}
+
+          {frete?.dentroDaArea ? (
+            <div className="rounded-lg border bg-emerald-50 p-3 text-sm text-emerald-700">
+              Taxa de entrega: {brl(frete.taxa ?? 0)} · Tempo estimado: {frete.tempoEstimadoMin}min
+            </div>
+          ) : (
+            <p className="rounded bg-red-50 px-3 py-2 text-sm text-red-700">
+              {erro ?? 'Esse endereco esta fora da nossa area de entrega.'}
+            </p>
+          )}
+
+          {frete?.dentroDaArea && (
+            <button
+              onClick={() => setEtapa('checkout')}
+              className="w-full rounded-lg bg-brand-600 py-3 text-sm font-semibold text-white"
+            >
+              Confirmar localizacao
+            </button>
+          )}
         </div>
       )}
 
       {etapa === 'checkout' && (
         <div className="space-y-4 px-4 py-4">
-          <button onClick={() => setEtapa('endereco')} className="text-sm text-brand-600">
-            ← Voltar ao endereco
+          <button onClick={() => setEtapa('confirmarLocal')} className="text-sm text-brand-600">
+            ← Voltar
           </button>
 
           <div className="rounded-lg border bg-white p-3">

@@ -25,26 +25,26 @@ model ConfiguracaoLoja {
   nomeFantasia    String   @default("")
   telefone        String   @default("")
   enderecoLoja    String   @default("")
+  latitudeLoja    Float?
+  longitudeLoja   Float?
   pedidoMinimo    Float    @default(0)
   tempoEstimadoMin Int     @default(45)
   aceitandoPedidos Boolean @default(true)
   atualizadoEm    DateTime @updatedAt
 }
 
-/// Area de entrega definida por faixa de CEP (ex: 09700-000 a 09799-999), com taxa e tempo
-/// proprios. Substitui o calculo por distancia/geocoding: mais confiavel e como o delivery
-/// brasileiro tradicionalmente funciona (bairro X custa R$5, bairro Y custa R$8).
+/// Camada de raio de entrega (estilo iFood): "ate X km" do endereco da loja, com tempo e taxa
+/// proprios. A distancia do cliente e calculada por geocoding (Mapbox) + linha reta (haversine)
+/// a partir do endereco confirmado no checkout.
 model AreaEntrega {
   id               String   @id @default(cuid())
-  descricao        String
-  cepInicio        Int
-  cepFim           Int
+  raioKm           Float    @default(1)
   taxa             Float
   tempoEstimadoMin Int      @default(45)
   ativo            Boolean  @default(true)
   criadoEm         DateTime @default(now())
 
-  @@index([cepInicio, cepFim])
+  @@index([raioKm])
 }
 
 enum StatusPedido {
@@ -73,7 +73,9 @@ model Pedido {
   cidade           String
   uf               String
   pontoReferencia  String?
-  areaEntregaDescricao String
+  latitude         Float?
+  longitude        Float?
+  distanciaKm      Float?
   taxaEntrega      Float
   totalProdutos    Float
   total            Float

@@ -1,31 +1,28 @@
 import { prisma } from './prisma'
-import { cepParaNumero } from './viacep'
 
-export interface AreaEncontrada {
+export interface CamadaEncontrada {
   id: string
-  descricao: string
+  raioKm: number
   taxa: number
   tempoEstimadoMin: number
 }
 
-export async function encontrarAreaPorCep(cep: string): Promise<AreaEncontrada | null> {
-  const cepNumero = cepParaNumero(cep)
-
-  const area = await prisma.areaEntrega.findFirst({
+/** Encontra a menor camada de raio (km) cadastrada que cobre a distancia informada. */
+export async function encontrarCamadaPorDistancia(distanciaKm: number): Promise<CamadaEncontrada | null> {
+  const camada = await prisma.areaEntrega.findFirst({
     where: {
       ativo: true,
-      cepInicio: { lte: cepNumero },
-      cepFim: { gte: cepNumero }
+      raioKm: { gte: distanciaKm }
     },
-    orderBy: { taxa: 'asc' }
+    orderBy: { raioKm: 'asc' }
   })
 
-  if (!area) return null
+  if (!camada) return null
 
   return {
-    id: area.id,
-    descricao: area.descricao,
-    taxa: area.taxa,
-    tempoEstimadoMin: area.tempoEstimadoMin
+    id: camada.id,
+    raioKm: camada.raioKm,
+    taxa: camada.taxa,
+    tempoEstimadoMin: camada.tempoEstimadoMin
   }
 }

@@ -16,13 +16,21 @@ export interface CardapioResponse {
   produtos: ProdutoPublico[]
 }
 
-export interface FreteResponse {
-  dentroDaArea: boolean
+export interface EnderecoViaCepResponse {
+  encontrado: boolean
+  cep?: string
   rua?: string
   bairro?: string
   cidade?: string
   uf?: string
-  areaDescricao?: string
+  mensagem?: string
+}
+
+export interface FreteResponse {
+  dentroDaArea: boolean
+  latitude?: number
+  longitude?: number
+  distanciaKm?: number
   taxa?: number
   tempoEstimadoMin?: number
   mensagem?: string
