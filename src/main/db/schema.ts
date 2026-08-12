@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS categorias (
 CREATE TABLE IF NOT EXISTS produtos (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   nome TEXT NOT NULL,
+  descricao TEXT,
   categoria_id INTEGER REFERENCES categorias(id) ON DELETE SET NULL,
   preco REAL NOT NULL DEFAULT 0,
   ncm TEXT,
@@ -16,6 +17,11 @@ CREATE TABLE IF NOT EXISTS produtos (
   controla_estoque INTEGER NOT NULL DEFAULT 0,
   quantidade_estoque REAL NOT NULL DEFAULT 0,
   estoque_minimo REAL NOT NULL DEFAULT 0,
+  item_cozinha INTEGER NOT NULL DEFAULT 0,
+  cozinha TEXT,
+  disponivel_pdv INTEGER NOT NULL DEFAULT 1,
+  disponivel_comanda INTEGER NOT NULL DEFAULT 1,
+  disponivel_delivery INTEGER NOT NULL DEFAULT 0,
   ativo INTEGER NOT NULL DEFAULT 1,
   criado_em TEXT NOT NULL DEFAULT (datetime('now'))
 );

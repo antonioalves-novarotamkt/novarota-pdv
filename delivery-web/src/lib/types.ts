@@ -11,14 +11,20 @@ export interface CardapioResponse {
     nomeFantasia: string
     tempoEstimadoMin: number
     aceitandoPedidos: boolean
+    pedidoMinimo: number
   }
   produtos: ProdutoPublico[]
 }
 
 export interface FreteResponse {
   dentroDaArea: boolean
-  distanciaKm?: number
+  rua?: string
+  bairro?: string
+  cidade?: string
+  uf?: string
+  areaDescricao?: string
   taxa?: number
+  tempoEstimadoMin?: number
   mensagem?: string
 }
 
@@ -29,10 +35,22 @@ export interface ItemPedidoInput {
 
 export type FormaPagamentoPedido = 'dinheiro' | 'cartao_entrega'
 
+export interface EnderecoPedidoInput {
+  cep: string
+  rua: string
+  numero: string
+  semNumero: boolean
+  complemento?: string
+  bairro: string
+  cidade: string
+  uf: string
+  pontoReferencia?: string
+}
+
 export interface CriarPedidoInput {
   clienteNome: string
   clienteTelefone: string
-  enderecoEntrega: string
+  endereco: EnderecoPedidoInput
   itens: ItemPedidoInput[]
   formaPagamento: FormaPagamentoPedido
   trocoPara?: number

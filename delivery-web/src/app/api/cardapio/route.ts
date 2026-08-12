@@ -18,7 +18,8 @@ export async function GET(): Promise<NextResponse<CardapioResponse>> {
     loja: {
       nomeFantasia: config?.nomeFantasia || 'Nosso delivery',
       tempoEstimadoMin: config?.tempoEstimadoMin ?? 45,
-      aceitandoPedidos: config?.aceitandoPedidos ?? true
+      aceitandoPedidos: config?.aceitandoPedidos ?? true,
+      pedidoMinimo: config?.pedidoMinimo ?? 0
     },
     produtos: produtos.map((p) => ({
       id: p.id,

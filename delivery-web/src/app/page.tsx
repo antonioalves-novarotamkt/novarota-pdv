@@ -17,20 +17,30 @@ function brl(valor: number): string {
   return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
+function formatarCep(valor: string): string {
+  const digitos = valor.replace(/\D/g, '').slice(0, 8)
+  if (digitos.length <= 5) return digitos
+  return `${digitos.slice(0, 5)}-${digitos.slice(5)}`
+}
+
 export default function PaginaPedido(): JSX.Element {
   const [cardapio, setCardapio] = useState<CardapioResponse | null>(null)
   const [carrinho, setCarrinho] = useState<ItemCarrinho[]>([])
-  const [etapa, setEtapa] = useState<'cardapio' | 'checkout' | 'confirmado'>('cardapio')
+  const [etapa, setEtapa] = useState<'cardapio' | 'endereco' | 'checkout' | 'confirmado'>('cardapio')
 
   const [nome, setNome] = useState('')
   const [telefone, setTelefone] = useState('')
-  const [endereco, setEndereco] = useState('')
+  const [cep, setCep] = useState('')
+  const [numero, setNumero] = useState('')
+  const [semNumero, setSemNumero] = useState(false)
+  const [complemento, setComplemento] = useState('')
+  const [pontoReferencia, setPontoReferencia] = useState('')
   const [formaPagamento, setFormaPagamento] = useState<FormaPagamentoPedido>('dinheiro')
   const [trocoPara, setTrocoPara] = useState('')
   const [observacoes, setObservacoes] = useState('')
 
   const [frete, setFrete] = useState<FreteResponse | null>(null)
-  const [calculandoFrete, setCalculandoFrete] = useState(false)
+  const [buscandoCep, setBuscandoCep] = useState(false)
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
   const [resultado, setResultado] = useState<CriarPedidoResponse | null>(null)
@@ -49,6 +59,7 @@ export default function PaginaPedido(): JSX.Element {
 
   const totalProdutos = carrinho.reduce((acc, i) => acc + i.quantidade * i.preco, 0)
   const total = totalProdutos + (frete?.dentroDaArea ? frete.taxa ?? 0 : 0)
+  const abaixoDoMinimo = (cardapio?.loja.pedidoMinimo ?? 0) > totalProdutos
 
   function adicionar(produto: ProdutoPublico): void {
     setCarrinho((atual) => {
@@ -66,37 +77,42 @@ export default function PaginaPedido(): JSX.Element {
     )
   }
 
-  async function calcularFrete(): Promise<void> {
-    if (!endereco.trim()) {
-      setErro('Informe o endereco de entrega.')
+  async function buscarFrete(): Promise<void> {
+    const cepLimpo = cep.replace(/\D/g, '')
+    if (cepLimpo.length !== 8) {
+      setErro('Informe um CEP valido (8 digitos).')
       return
     }
     setErro(null)
-    setCalculandoFrete(true)
+    setBuscandoCep(true)
     setFrete(null)
     try {
       const resp = await fetch('/api/frete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ endereco })
+        body: JSON.stringify({ cep: cepLimpo })
       })
       const dados = (await resp.json()) as FreteResponse
       setFrete(dados)
-      if (!dados.dentroDaArea) setErro(dados.mensagem ?? 'Endereco fora da area de entrega.')
+      if (!dados.dentroDaArea) setErro(dados.mensagem ?? 'Nao entregamos nesse CEP.')
     } catch {
       setErro('Nao foi possivel calcular o frete agora. Tente novamente.')
     } finally {
-      setCalculandoFrete(false)
+      setBuscandoCep(false)
     }
   }
 
   async function enviarPedido(): Promise<void> {
-    if (!nome.trim() || !telefone.trim() || !endereco.trim()) {
-      setErro('Preencha nome, telefone e endereco.')
+    if (!nome.trim() || !telefone.trim()) {
+      setErro('Preencha nome e telefone.')
       return
     }
     if (!frete?.dentroDaArea) {
-      setErro('Calcule o frete para um endereco dentro da area de entrega antes de finalizar.')
+      setErro('Informe um CEP dentro da area de entrega antes de finalizar.')
+      return
+    }
+    if (!numero.trim() && !semNumero) {
+      setErro('Informe o numero do endereco (ou marque "sem numero").')
       return
     }
     setErro(null)
@@ -108,7 +124,17 @@ export default function PaginaPedido(): JSX.Element {
         body: JSON.stringify({
           clienteNome: nome,
           clienteTelefone: telefone,
-          enderecoEntrega: endereco,
+          endereco: {
+            cep: cep.replace(/\D/g, ''),
+            rua: frete.rua ?? '',
+            numero,
+            semNumero,
+            complemento: complemento || undefined,
+            bairro: frete.bairro ?? '',
+            cidade: frete.cidade ?? '',
+            uf: frete.uf ?? '',
+            pontoReferencia: pontoReferencia || undefined
+          },
           itens: carrinho.map((i) => ({ produtoId: i.id, quantidade: i.quantidade })),
           formaPagamento,
           trocoPara: formaPagamento === 'dinheiro' && trocoPara ? Number(trocoPara) : undefined,
@@ -179,7 +205,13 @@ export default function PaginaPedido(): JSX.Element {
     <main className="mx-auto max-w-md pb-32">
       <header className="sticky top-0 z-10 border-b bg-white px-4 py-4">
         <h1 className="text-lg font-bold">{cardapio.loja.nomeFantasia}</h1>
-        <p className="text-xs text-slate-500">Entrega em cerca de {cardapio.loja.tempoEstimadoMin} min</p>
+        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
+          <span className="inline-flex items-center gap-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Aberto
+          </span>
+          <span>⏱ {cardapio.loja.tempoEstimadoMin}min</span>
+          {cardapio.loja.pedidoMinimo > 0 && <span>Pedido minimo {brl(cardapio.loja.pedidoMinimo)}</span>}
+        </div>
       </header>
 
       {etapa === 'cardapio' && (
@@ -210,10 +242,102 @@ export default function PaginaPedido(): JSX.Element {
         </div>
       )}
 
-      {etapa === 'checkout' && (
+      {etapa === 'endereco' && (
         <div className="space-y-4 px-4 py-4">
           <button onClick={() => setEtapa('cardapio')} className="text-sm text-brand-600">
             ← Voltar ao cardapio
+          </button>
+
+          <h2 className="text-base font-semibold">Informe seu endereco</h2>
+
+          <div className="flex gap-2">
+            <input
+              placeholder="CEP"
+              value={formatarCep(cep)}
+              onChange={(e) => {
+                setCep(e.target.value)
+                setFrete(null)
+              }}
+              className="flex-1 rounded border px-3 py-2 text-sm"
+            />
+            <button
+              onClick={buscarFrete}
+              disabled={buscandoCep}
+              className="whitespace-nowrap rounded bg-slate-800 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+            >
+              {buscandoCep ? 'Buscando...' : 'Buscar CEP'}
+            </button>
+          </div>
+
+          {frete?.dentroDaArea && (
+            <div className="rounded-lg border bg-white p-3 text-sm">
+              <p className="font-medium">
+                {frete.rua}, {frete.bairro}
+              </p>
+              <p className="text-slate-500">
+                {frete.cidade} - {frete.uf}
+              </p>
+              <p className="mt-1 text-emerald-700">
+                Taxa de entrega: {brl(frete.taxa ?? 0)} · Tempo estimado: {frete.tempoEstimadoMin}min
+              </p>
+            </div>
+          )}
+
+          {frete?.dentroDaArea && (
+            <>
+              <div className="flex gap-2">
+                <input
+                  placeholder="Numero"
+                  value={numero}
+                  disabled={semNumero}
+                  onChange={(e) => setNumero(e.target.value)}
+                  className="flex-1 rounded border px-3 py-2 text-sm disabled:bg-slate-100"
+                />
+                <label className="flex items-center gap-1 text-xs text-slate-500">
+                  <input
+                    type="checkbox"
+                    checked={semNumero}
+                    onChange={(e) => {
+                      setSemNumero(e.target.checked)
+                      if (e.target.checked) setNumero('')
+                    }}
+                  />
+                  Sem numero
+                </label>
+              </div>
+              <input
+                placeholder="Complemento (opcional)"
+                value={complemento}
+                onChange={(e) => setComplemento(e.target.value)}
+                className="w-full rounded border px-3 py-2 text-sm"
+              />
+              <input
+                placeholder="Ponto de referencia (opcional)"
+                value={pontoReferencia}
+                onChange={(e) => setPontoReferencia(e.target.value)}
+                className="w-full rounded border px-3 py-2 text-sm"
+              />
+
+              {erro && <p className="rounded bg-red-50 px-3 py-2 text-sm text-red-700">{erro}</p>}
+
+              <button
+                onClick={() => setEtapa('checkout')}
+                disabled={!numero.trim() && !semNumero}
+                className="w-full rounded-lg bg-brand-600 py-3 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                Continuar
+              </button>
+            </>
+          )}
+
+          {erro && !frete?.dentroDaArea && <p className="rounded bg-red-50 px-3 py-2 text-sm text-red-700">{erro}</p>}
+        </div>
+      )}
+
+      {etapa === 'checkout' && (
+        <div className="space-y-4 px-4 py-4">
+          <button onClick={() => setEtapa('endereco')} className="text-sm text-brand-600">
+            ← Voltar ao endereco
           </button>
 
           <div className="rounded-lg border bg-white p-3">
@@ -238,44 +362,6 @@ export default function PaginaPedido(): JSX.Element {
                 <span className="w-16 text-right">{brl(item.quantidade * item.preco)}</span>
               </div>
             ))}
-          </div>
-
-          <div className="space-y-2">
-            <input
-              placeholder="Seu nome"
-              value={nome}
-              onChange={(e) => setNome(e.target.value)}
-              className="w-full rounded border px-3 py-2 text-sm"
-            />
-            <input
-              placeholder="Telefone / WhatsApp"
-              value={telefone}
-              onChange={(e) => setTelefone(e.target.value)}
-              className="w-full rounded border px-3 py-2 text-sm"
-            />
-            <div className="flex gap-2">
-              <input
-                placeholder="Endereco completo (rua, numero, bairro, cidade)"
-                value={endereco}
-                onChange={(e) => {
-                  setEndereco(e.target.value)
-                  setFrete(null)
-                }}
-                className="flex-1 rounded border px-3 py-2 text-sm"
-              />
-              <button
-                onClick={calcularFrete}
-                disabled={calculandoFrete}
-                className="whitespace-nowrap rounded bg-slate-800 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
-              >
-                {calculandoFrete ? 'Calculando...' : 'Calcular frete'}
-              </button>
-            </div>
-            {frete?.dentroDaArea && (
-              <p className="text-xs text-emerald-700">
-                Distancia: {frete.distanciaKm} km · Taxa de entrega: {brl(frete.taxa ?? 0)}
-              </p>
-            )}
           </div>
 
           <div>
@@ -309,6 +395,21 @@ export default function PaginaPedido(): JSX.Element {
             )}
           </div>
 
+          <div className="space-y-2">
+            <input
+              placeholder="Seu nome"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              className="w-full rounded border px-3 py-2 text-sm"
+            />
+            <input
+              placeholder="Telefone / WhatsApp"
+              value={telefone}
+              onChange={(e) => setTelefone(e.target.value)}
+              className="w-full rounded border px-3 py-2 text-sm"
+            />
+          </div>
+
           <textarea
             placeholder="Observacoes (opcional)"
             value={observacoes}
@@ -321,11 +422,11 @@ export default function PaginaPedido(): JSX.Element {
 
           <div className="rounded-lg border bg-white p-3 text-sm">
             <div className="flex justify-between text-slate-500">
-              <span>Subtotal</span>
+              <span>Valor dos itens</span>
               <span>{brl(totalProdutos)}</span>
             </div>
             <div className="flex justify-between text-slate-500">
-              <span>Entrega</span>
+              <span>Taxa de entrega</span>
               <span>{frete?.dentroDaArea ? brl(frete.taxa ?? 0) : '—'}</span>
             </div>
             <div className="mt-1 flex justify-between text-base font-bold">
@@ -350,10 +451,16 @@ export default function PaginaPedido(): JSX.Element {
             <div className="text-sm">
               <p className="font-semibold">{carrinho.reduce((a, i) => a + i.quantidade, 0)} item(ns)</p>
               <p className="text-slate-500">{brl(totalProdutos)}</p>
+              {abaixoDoMinimo && (
+                <p className="text-xs text-amber-600">
+                  Faltam {brl((cardapio.loja.pedidoMinimo ?? 0) - totalProdutos)} para o pedido minimo
+                </p>
+              )}
             </div>
             <button
-              onClick={() => setEtapa('checkout')}
-              className="rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white"
+              onClick={() => setEtapa('endereco')}
+              disabled={abaixoDoMinimo}
+              className="rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-40"
             >
               Ver carrinho
             </button>

@@ -9,6 +9,7 @@ datasource db {
 
 model Produto {
   id        String        @id @default(cuid())
+  pdvId     Int?          @unique
   nome      String
   descricao String?
   preco     Float
@@ -24,13 +25,26 @@ model ConfiguracaoLoja {
   nomeFantasia    String   @default("")
   telefone        String   @default("")
   enderecoLoja    String   @default("")
-  latitudeLoja    Float?
-  longitudeLoja   Float?
-  raioMaximoKm    Float    @default(8)
-  faixasTaxa      Json     @default("[{\"ateKm\":3,\"taxa\":6},{\"ateKm\":6,\"taxa\":9},{\"ateKm\":8,\"taxa\":14}]")
+  pedidoMinimo    Float    @default(0)
   tempoEstimadoMin Int     @default(45)
   aceitandoPedidos Boolean @default(true)
   atualizadoEm    DateTime @updatedAt
+}
+
+/// Area de entrega definida por faixa de CEP (ex: 09700-000 a 09799-999), com taxa e tempo
+/// proprios. Substitui o calculo por distancia/geocoding: mais confiavel e como o delivery
+/// brasileiro tradicionalmente funciona (bairro X custa R$5, bairro Y custa R$8).
+model AreaEntrega {
+  id               String   @id @default(cuid())
+  descricao        String
+  cepInicio        Int
+  cepFim           Int
+  taxa             Float
+  tempoEstimadoMin Int      @default(45)
+  ativo            Boolean  @default(true)
+  criadoEm         DateTime @default(now())
+
+  @@index([cepInicio, cepFim])
 }
 
 enum StatusPedido {
@@ -50,10 +64,16 @@ model Pedido {
   id               String                @id @default(cuid())
   clienteNome      String
   clienteTelefone  String
-  enderecoEntrega  String
-  latitude         Float?
-  longitude        Float?
-  distanciaKm      Float?
+  cep              String
+  rua              String
+  numero           String
+  semNumero        Boolean               @default(false)
+  complemento      String?
+  bairro           String
+  cidade           String
+  uf               String
+  pontoReferencia  String?
+  areaEntregaDescricao String
   taxaEntrega      Float
   totalProdutos    Float
   total            Float

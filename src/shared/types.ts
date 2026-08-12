@@ -7,6 +7,7 @@ export interface Categoria {
 export interface Produto {
   id: number
   nome: string
+  descricao: string | null
   categoria_id: number | null
   preco: number
   ncm: string | null
@@ -15,12 +16,18 @@ export interface Produto {
   controla_estoque: 0 | 1
   quantidade_estoque: number
   estoque_minimo: number
+  item_cozinha: 0 | 1
+  cozinha: string | null
+  disponivel_pdv: 0 | 1
+  disponivel_comanda: 0 | 1
+  disponivel_delivery: 0 | 1
   ativo: 0 | 1
   criado_em: string
 }
 
 export interface ProdutoInput {
   nome: string
+  descricao?: string | null
   categoria_id: number | null
   preco: number
   ncm?: string | null
@@ -29,6 +36,11 @@ export interface ProdutoInput {
   controla_estoque?: boolean
   quantidade_estoque?: number
   estoque_minimo?: number
+  item_cozinha?: boolean
+  cozinha?: string | null
+  disponivel_pdv?: boolean
+  disponivel_comanda?: boolean
+  disponivel_delivery?: boolean
 }
 
 export type MesaStatus = 'livre' | 'ocupada'
@@ -165,6 +177,7 @@ export interface AppConfig {
 export interface ResultadoSincronizacaoDelivery {
   ok: boolean
   importados: number
+  produtosSincronizados?: number
   mensagemErro?: string
 }
 

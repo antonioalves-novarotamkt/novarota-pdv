@@ -1,52 +1,50 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { geocodificarEndereco } from '@/lib/geocode'
-import { calcularDistanciaKm, calcularTaxaEntrega, type FaixaTaxa } from '@/lib/distancia'
+import { buscarEnderecoPorCep } from '@/lib/viacep'
+import { encontrarAreaPorCep } from '@/lib/areaEntrega'
 import type { FreteResponse } from '@/lib/types'
 
 export async function POST(request: Request): Promise<NextResponse<FreteResponse>> {
-  const body = (await request.json()) as { endereco?: string }
-  const endereco = body.endereco?.trim()
+  const body = (await request.json()) as { cep?: string }
+  const cep = body.cep?.replace(/\D/g, '')
 
-  if (!endereco || endereco.length < 8) {
-    return NextResponse.json({ dentroDaArea: false, mensagem: 'Informe um endereco completo.' }, { status: 400 })
+  if (!cep || cep.length !== 8) {
+    return NextResponse.json({ dentroDaArea: false, mensagem: 'Informe um CEP valido (8 digitos).' }, { status: 400 })
   }
 
   const config = await prisma.configuracaoLoja.findUnique({ where: { id: 'config' } })
-  if (!config?.latitudeLoja || !config?.longitudeLoja) {
+  if (!config?.aceitandoPedidos) {
     return NextResponse.json(
-      { dentroDaArea: false, mensagem: 'Area de entrega ainda nao configurada pela loja.' },
+      { dentroDaArea: false, mensagem: 'A loja nao esta aceitando pedidos no momento.' },
       { status: 503 }
     )
   }
 
-  const coordenadasCliente = await geocodificarEndereco(endereco)
-  if (!coordenadasCliente) {
-    return NextResponse.json(
-      { dentroDaArea: false, mensagem: 'Nao conseguimos localizar esse endereco. Confira e tente novamente.' },
-      { status: 422 }
-    )
+  const endereco = await buscarEnderecoPorCep(cep)
+  if (!endereco) {
+    return NextResponse.json({ dentroDaArea: false, mensagem: 'CEP nao encontrado. Confira e tente novamente.' }, { status: 422 })
   }
 
-  const distanciaKm = calcularDistanciaKm(
-    { latitude: config.latitudeLoja, longitude: config.longitudeLoja },
-    coordenadasCliente
-  )
-
-  const faixas = config.faixasTaxa as unknown as FaixaTaxa[]
-  const resultado = calcularTaxaEntrega(distanciaKm, faixas, config.raioMaximoKm)
-
-  if (!resultado.dentroDaArea) {
+  const area = await encontrarAreaPorCep(cep)
+  if (!area) {
     return NextResponse.json({
       dentroDaArea: false,
-      distanciaKm: Number(resultado.distanciaKm.toFixed(1)),
-      mensagem: `Esse endereco esta fora da nossa area de entrega (raio de ${config.raioMaximoKm} km).`
+      rua: endereco.rua,
+      bairro: endereco.bairro,
+      cidade: endereco.cidade,
+      uf: endereco.uf,
+      mensagem: 'Esse CEP esta fora da nossa area de entrega no momento.'
     })
   }
 
   return NextResponse.json({
     dentroDaArea: true,
-    distanciaKm: Number(resultado.distanciaKm.toFixed(1)),
-    taxa: resultado.taxa
+    rua: endereco.rua,
+    bairro: endereco.bairro,
+    cidade: endereco.cidade,
+    uf: endereco.uf,
+    areaDescricao: area.descricao,
+    taxa: area.taxa,
+    tempoEstimadoMin: area.tempoEstimadoMin
   })
 }

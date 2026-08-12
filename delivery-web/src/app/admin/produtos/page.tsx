@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 
 interface ProdutoAdmin {
   id: string
+  pdvId: number | null
   nome: string
   descricao: string | null
   preco: number
@@ -68,6 +69,13 @@ export default function AdminProdutosPage(): JSX.Element {
         </a>
       </div>
 
+      <p className="mb-4 text-xs text-slate-500">
+        Produtos marcados <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium">via PDV</span>{' '}
+        vem do cadastro de Produtos do PDV desktop (aba &quot;Delivery Online&quot; marcada) e sao
+        atualizados automaticamente a cada sincronizacao — edicoes feitas aqui manualmente serao
+        sobrescritas na proxima sincronizacao. Produtos sem essa marcacao sao exclusivos deste painel.
+      </p>
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
         <div className="overflow-hidden rounded-lg border bg-white">
           <table className="w-full text-sm">
@@ -83,7 +91,14 @@ export default function AdminProdutosPage(): JSX.Element {
             <tbody>
               {produtos.map((p) => (
                 <tr key={p.id} className="border-t">
-                  <td className="px-3 py-2">{p.nome}</td>
+                  <td className="px-3 py-2">
+                    {p.nome}
+                    {p.pdvId && (
+                      <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">
+                        via PDV
+                      </span>
+                    )}
+                  </td>
                   <td className="px-3 py-2 text-slate-500">{p.categoria}</td>
                   <td className="px-3 py-2">{p.preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
                   <td className="px-3 py-2">

@@ -53,7 +53,7 @@ export default function ConfiguracoesPage(): JSX.Element {
       const resultado = await api.config.sincronizarDeliveryAgora()
       setMensagemDelivery(
         resultado.ok
-          ? `${resultado.importados} pedido(s) importado(s) como comanda.`
+          ? `${resultado.produtosSincronizados ?? 0} produto(s) enviados ao catalogo, ${resultado.importados} pedido(s) importado(s) como comanda.`
           : resultado.mensagemErro ?? 'Falha ao sincronizar.'
       )
     } finally {

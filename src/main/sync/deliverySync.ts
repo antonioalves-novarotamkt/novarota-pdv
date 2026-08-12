@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { obterConfig } from '../db/config.repo'
-import { encontrarOuCriarProdutoPorNome } from '../db/produtos.repo'
+import { encontrarOuCriarProdutoPorNome, listarProdutos } from '../db/produtos.repo'
+import { listarCategorias } from '../db/categorias.repo'
 import { abrirComanda, adicionarItemComanda } from '../db/comandas.repo'
 import type { ConfiguracoesDelivery, ResultadoSincronizacaoDelivery } from '../../shared/types'
 
@@ -15,7 +16,16 @@ interface PedidoRemoto {
   id: string
   clienteNome: string
   clienteTelefone: string
-  enderecoEntrega: string
+  cep: string
+  rua: string
+  numero: string
+  semNumero: boolean
+  complemento: string | null
+  bairro: string
+  cidade: string
+  uf: string
+  pontoReferencia: string | null
+  areaEntregaDescricao: string
   taxaEntrega: number
   formaPagamento: 'dinheiro' | 'cartao_entrega'
   trocoPara: number | null
@@ -25,13 +35,25 @@ interface PedidoRemoto {
 
 let timer: ReturnType<typeof setInterval> | null = null
 
+function montarEnderecoCompleto(pedido: PedidoRemoto): string {
+  const numero = pedido.semNumero ? 'S/N' : pedido.numero
+  let endereco = `${pedido.rua}, ${numero}`
+  if (pedido.complemento) endereco += ` - ${pedido.complemento}`
+  endereco += ` - ${pedido.bairro}, ${pedido.cidade}/${pedido.uf} - CEP ${pedido.cep}`
+  return endereco
+}
+
 function montarObservacaoComanda(pedido: PedidoRemoto): string {
   const partes = [
     `Cliente: ${pedido.clienteNome}`,
     `Tel: ${pedido.clienteTelefone}`,
-    `Endereco: ${pedido.enderecoEntrega}`,
+    `Endereco: ${montarEnderecoCompleto(pedido)}`,
+    `Area: ${pedido.areaEntregaDescricao}`,
     `Pagamento na entrega: ${pedido.formaPagamento === 'dinheiro' ? 'Dinheiro' : 'Cartao (maquininha)'}`
   ]
+  if (pedido.pontoReferencia) {
+    partes.push(`Referencia: ${pedido.pontoReferencia}`)
+  }
   if (pedido.formaPagamento === 'dinheiro' && pedido.trocoPara) {
     partes.push(`Troco para: R$ ${pedido.trocoPara.toFixed(2)}`)
   }
@@ -74,6 +96,27 @@ async function importarPedido(apiUrl: string, token: string, pedido: PedidoRemot
   )
 }
 
+async function pushProdutosDelivery(apiUrl: string, token: string): Promise<number> {
+  const categorias = listarCategorias()
+  const categoriaPorId = new Map(categorias.map((c) => [c.id, c.nome]))
+
+  const produtos = listarProdutos(false).map((produto) => ({
+    pdvId: produto.id,
+    nome: produto.nome,
+    descricao: produto.descricao,
+    preco: produto.preco,
+    categoria: produto.categoria_id ? categoriaPorId.get(produto.categoria_id) ?? 'Cardapio' : 'Cardapio',
+    ativo: produto.ativo === 1 && produto.disponivel_delivery === 1
+  }))
+
+  const { data } = await axios.post<{ ok: boolean; sincronizados: number }>(
+    `${apiUrl}/api/produtos/sync`,
+    { produtos },
+    { headers: { Authorization: `Bearer ${token}` }, timeout: 20_000 }
+  )
+  return data.sincronizados
+}
+
 export async function sincronizarPedidosDelivery(): Promise<ResultadoSincronizacaoDelivery> {
   const config = obterConfig()
   const delivery = config.delivery
@@ -83,6 +126,8 @@ export async function sincronizarPedidosDelivery(): Promise<ResultadoSincronizac
   }
 
   try {
+    const produtosSincronizados = await pushProdutosDelivery(delivery.apiUrl, delivery.syncToken)
+
     const { data } = await axios.get<PedidoRemoto[]>(`${delivery.apiUrl}/api/pedidos/pendentes`, {
       headers: { Authorization: `Bearer ${delivery.syncToken}` },
       timeout: 15_000
@@ -92,7 +137,7 @@ export async function sincronizarPedidosDelivery(): Promise<ResultadoSincronizac
       await importarPedido(delivery.apiUrl, delivery.syncToken, pedido)
     }
 
-    return { ok: true, importados: data.length }
+    return { ok: true, importados: data.length, produtosSincronizados }
   } catch (error) {
     return { ok: false, importados: 0, mensagemErro: (error as Error).message }
   }
