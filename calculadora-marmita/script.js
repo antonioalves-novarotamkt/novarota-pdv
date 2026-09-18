@@ -3,9 +3,10 @@ const STORAGE_KEY = 'calculadora-marmita:estado'
 const state = {
   ingredientes: [],
   custoEmbalagem: 0,
-  custoExtra: 0,
+  custoFixo: 0,
+  custoVariavel: 0,
   rendimento: 1,
-  margem: 30
+  margem: 50
 }
 
 const el = {
@@ -18,22 +19,51 @@ const el = {
   emptyHint: document.getElementById('empty-hint'),
   custoTotalIngredientes: document.getElementById('custo-total-ingredientes'),
   custoEmbalagem: document.getElementById('custo-embalagem'),
-  custoExtra: document.getElementById('custo-extra'),
+  custoFixo: document.getElementById('custo-fixo'),
+  custoVariavel: document.getElementById('custo-variavel'),
   rendimento: document.getElementById('rendimento'),
   margem: document.getElementById('margem'),
   resCustoReceita: document.getElementById('res-custo-receita'),
   resCustoMarmita: document.getElementById('res-custo-marmita'),
   resPrecoVenda: document.getElementById('res-preco-venda'),
   resLucro: document.getElementById('res-lucro'),
+  diagnostico: document.getElementById('diagnostico'),
   btnLimpar: document.getElementById('btn-limpar')
 }
 
+// Cada unidade tem uma "unidade de referência" (o que o preço informado representa)
+// e um fator de conversão da quantidade usada para essa referência.
+const UNIDADES = {
+  g: { referencia: 'kg', fator: 1 / 1000 },
+  kg: { referencia: 'kg', fator: 1 },
+  ml: { referencia: 'l', fator: 1 / 1000 },
+  l: { referencia: 'l', fator: 1 },
+  un: { referencia: 'un', fator: 1 }
+}
+
 function formatarMoeda(valor) {
-  return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  const arredondado = Math.round((valor + Number.EPSILON) * 100) / 100
+  return arredondado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
+function formatarPercentual(valor) {
+  return `${valor.toFixed(1)}%`
 }
 
 function custoIngrediente(ingrediente) {
-  return ingrediente.quantidade * ingrediente.preco
+  const config = UNIDADES[ingrediente.unidade] || UNIDADES.un
+  return ingrediente.quantidade * config.fator * ingrediente.preco
+}
+
+function labelPreco(unidade) {
+  const config = UNIDADES[unidade] || UNIDADES.un
+  if (config.referencia === 'kg') return 'Preço por kg (R$)'
+  if (config.referencia === 'l') return 'Preço por litro (R$)'
+  return 'Preço por unidade (R$)'
+}
+
+function atualizarPlaceholderPreco() {
+  el.preco.placeholder = labelPreco(el.unidade.value)
 }
 
 function salvar() {
@@ -76,9 +106,10 @@ function removerIngrediente(index) {
 function limparTudo() {
   state.ingredientes = []
   state.custoEmbalagem = 0
-  state.custoExtra = 0
+  state.custoFixo = 0
+  state.custoVariavel = 0
   state.rendimento = 1
-  state.margem = 30
+  state.margem = 50
   localStorage.removeItem(STORAGE_KEY)
   sincronizarCamposComEstado()
   renderizar()
@@ -86,9 +117,57 @@ function limparTudo() {
 
 function sincronizarCamposComEstado() {
   el.custoEmbalagem.value = state.custoEmbalagem
-  el.custoExtra.value = state.custoExtra
+  el.custoFixo.value = state.custoFixo
+  el.custoVariavel.value = state.custoVariavel
   el.rendimento.value = state.rendimento
   el.margem.value = state.margem
+}
+
+function unidadeReferenciaLabel(unidade) {
+  const config = UNIDADES[unidade] || UNIDADES.un
+  return config.referencia
+}
+
+function renderizarDiagnostico(precoVenda, custoIngredientesEEmbalagem, custoFixo, custoVariavel) {
+  el.diagnostico.innerHTML = ''
+
+  const itens = [
+    {
+      titulo: 'Ingredientes + embalagens',
+      valor: custoIngredientesEEmbalagem,
+      faixaMin: 28,
+      faixaMax: 35
+    },
+    {
+      titulo: 'Custos fixos',
+      valor: custoFixo,
+      faixaMin: 0,
+      faixaMax: 15
+    },
+    {
+      titulo: 'Custos variáveis',
+      valor: custoVariavel,
+      faixaMin: 0,
+      faixaMax: 15
+    }
+  ]
+
+  itens.forEach((item) => {
+    const percentual = precoVenda > 0 ? (item.valor / precoVenda) * 100 : 0
+    const dentroDaFaixa = percentual >= item.faixaMin && percentual <= item.faixaMax
+    const div = document.createElement('div')
+    div.className = `diagnostico-item ${dentroDaFaixa ? 'ok' : 'alerta'}`
+    div.innerHTML = `
+      <div>
+        <div>${item.titulo}</div>
+        <div class="info">Recomendado: até ${item.faixaMax}% do preço de venda ${
+      item.faixaMin > 0 ? `(ideal entre ${item.faixaMin}% e ${item.faixaMax}%)` : ''
+    }</div>
+      </div>
+      <span class="percentual">${formatarPercentual(percentual)}</span>
+    `
+    el.diagnostico.appendChild(div)
+  })
 }
 
 function renderizar() {
@@ -105,7 +184,7 @@ function renderizar() {
     tr.innerHTML = `
       <td>${ingrediente.nome}</td>
       <td>${ingrediente.quantidade} ${ingrediente.unidade}</td>
-      <td>${formatarMoeda(ingrediente.preco)}</td>
+      <td>${formatarMoeda(ingrediente.preco)}/${unidadeReferenciaLabel(ingrediente.unidade)}</td>
       <td>${formatarMoeda(custo)}</td>
       <td><button class="remover" data-index="${index}">remover</button></td>
     `
@@ -119,16 +198,24 @@ function renderizar() {
   el.custoTotalIngredientes.textContent = formatarMoeda(custoIngredientes)
 
   const rendimento = Math.max(1, state.rendimento || 1)
-  const custoTotalReceita = custoIngredientes + state.custoExtra * rendimento
-  const custoPorMarmita = custoTotalReceita / rendimento + Number(state.custoEmbalagem || 0)
+  const custoIngredientesPorMarmita = custoIngredientes / rendimento
+  const custoEmbalagem = Number(state.custoEmbalagem || 0)
+  const custoFixo = Number(state.custoFixo || 0)
+  const custoVariavel = Number(state.custoVariavel || 0)
+
+  const custoIngredientesEEmbalagem = custoIngredientesPorMarmita + custoEmbalagem
+  const custoPorMarmita = custoIngredientesEEmbalagem + custoFixo + custoVariavel
+
   const margem = Math.max(0, state.margem || 0)
   const precoVenda = custoPorMarmita * (1 + margem / 100)
   const lucro = precoVenda - custoPorMarmita
 
-  el.resCustoReceita.textContent = formatarMoeda(custoTotalReceita)
+  el.resCustoReceita.textContent = formatarMoeda(custoIngredientes)
   el.resCustoMarmita.textContent = formatarMoeda(custoPorMarmita)
   el.resPrecoVenda.textContent = formatarMoeda(precoVenda)
   el.resLucro.textContent = formatarMoeda(lucro)
+
+  renderizarDiagnostico(precoVenda, custoIngredientesEEmbalagem, custoFixo, custoVariavel)
 }
 
 el.btnAdd.addEventListener('click', adicionarIngrediente)
@@ -141,14 +228,20 @@ el.quantidade.addEventListener('keydown', (e) => {
 el.preco.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') adicionarIngrediente()
 })
+el.unidade.addEventListener('change', atualizarPlaceholderPreco)
 
 el.custoEmbalagem.addEventListener('input', () => {
   state.custoEmbalagem = Number(el.custoEmbalagem.value) || 0
   salvar()
   renderizar()
 })
-el.custoExtra.addEventListener('input', () => {
-  state.custoExtra = Number(el.custoExtra.value) || 0
+el.custoFixo.addEventListener('input', () => {
+  state.custoFixo = Number(el.custoFixo.value) || 0
+  salvar()
+  renderizar()
+})
+el.custoVariavel.addEventListener('input', () => {
+  state.custoVariavel = Number(el.custoVariavel.value) || 0
   salvar()
   renderizar()
 })
@@ -169,4 +262,5 @@ el.btnLimpar.addEventListener('click', () => {
 
 carregar()
 sincronizarCamposComEstado()
+atualizarPlaceholderPreco()
 renderizar()

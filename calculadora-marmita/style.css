@@ -177,6 +177,57 @@ tfoot td {
   color: var(--brand-dark);
 }
 
+.section-hint {
+  margin: -6px 0 14px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.diagnostico {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.diagnostico-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  background: #f1f5f9;
+}
+
+.diagnostico-item .info {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.diagnostico-item.ok {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.diagnostico-item.ok .percentual {
+  color: #15803d;
+}
+
+.diagnostico-item.alerta {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}
+
+.diagnostico-item.alerta .percentual {
+  color: #b91c1c;
+}
+
+.diagnostico-item .percentual {
+  font-weight: 700;
+  font-size: 15px;
+}
+
 footer {
   text-align: right;
 }

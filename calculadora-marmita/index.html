@@ -15,18 +15,21 @@
 
     <main>
       <section class="card">
-        <h2>1. Ingredientes da receita</h2>
+        <h2>1. Ingredientes de uma marmita</h2>
+        <p class="section-hint">
+          Informe a quantidade usada em <strong>uma marmita</strong> e o preço médio de compra do ingrediente.
+        </p>
         <div class="ingredient-form">
           <input type="text" id="ing-nome" placeholder="Ingrediente (ex: Arroz)" />
           <input type="number" id="ing-quantidade" placeholder="Qtd. usada" min="0" step="0.001" />
           <select id="ing-unidade">
-            <option value="kg">kg</option>
             <option value="g">g</option>
-            <option value="l">l</option>
+            <option value="kg">kg</option>
             <option value="ml">ml</option>
+            <option value="l">l</option>
             <option value="un">un</option>
           </select>
-          <input type="number" id="ing-preco" placeholder="Preço por unidade (R$)" min="0" step="0.01" />
+          <input type="number" id="ing-preco" placeholder="Preço por kg (R$)" min="0" step="0.01" />
           <button id="btn-add-ingrediente">Adicionar</button>
         </div>
 
@@ -35,7 +38,7 @@
             <tr>
               <th>Ingrediente</th>
               <th>Qtd. usada</th>
-              <th>Preço/unid.</th>
+              <th>Preço ref.</th>
               <th>Custo</th>
               <th></th>
             </tr>
@@ -43,7 +46,7 @@
           <tbody id="tbody-ingredientes"></tbody>
           <tfoot>
             <tr>
-              <td colspan="3">Custo total dos ingredientes</td>
+              <td colspan="3">Custo total dos ingredientes (por marmita)</td>
               <td id="custo-total-ingredientes">R$ 0,00</td>
               <td></td>
             </tr>
@@ -53,25 +56,31 @@
       </section>
 
       <section class="card">
-        <h2>2. Custos extras e rendimento</h2>
+        <h2>2. Embalagem, custos fixos e variáveis</h2>
         <div class="grid-2">
           <label>
             Embalagem por marmita (R$)
             <input type="number" id="custo-embalagem" min="0" step="0.01" value="0" />
           </label>
           <label>
-            Outros custos fixos por marmita (R$)
-            <span class="hint">gás, energia, mão de obra rateada, etc.</span>
-            <input type="number" id="custo-extra" min="0" step="0.01" value="0" />
-          </label>
-          <label>
-            Rendimento da receita
-            <span class="hint">quantas marmitas essa receita produz</span>
+            Rendimento da lista de ingredientes
+            <span class="hint">se os ingredientes acima já são para 1 marmita, deixe 1</span>
             <input type="number" id="rendimento" min="1" step="1" value="1" />
           </label>
           <label>
+            Custos fixos por marmita (R$)
+            <span class="hint">aluguel, luz, água, gás, salários rateados por marmita/mês</span>
+            <input type="number" id="custo-fixo" min="0" step="0.01" value="0" />
+          </label>
+          <label>
+            Custos variáveis por marmita (R$)
+            <span class="hint">entrega/motoboy, insumos extras, embalagens auxiliares</span>
+            <input type="number" id="custo-variavel" min="0" step="0.01" value="0" />
+          </label>
+          <label>
             Margem de lucro desejada (%)
-            <input type="number" id="margem" min="0" step="1" value="30" />
+            <span class="hint">a margem ideal recomendada para marmitex é de 50%</span>
+            <input type="number" id="margem" min="0" step="1" value="50" />
           </label>
         </div>
       </section>
@@ -96,6 +105,15 @@
             <span class="valor" id="res-lucro">R$ 0,00</span>
           </div>
         </div>
+      </section>
+
+      <section class="card">
+        <h2>4. Diagnóstico da estrutura de custos</h2>
+        <p class="section-hint">
+          Percentual de cada custo em relação ao preço de venda sugerido, comparado com as faixas recomendadas
+          para marmitex.
+        </p>
+        <div id="diagnostico" class="diagnostico"></div>
       </section>
     </main>
 
