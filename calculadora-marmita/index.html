@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculadora de Custo de Marmita</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Calculadora de Custo de Marmita</h1>
+      <p class="subtitle">Monte a ficha técnica, descubra o custo por marmita e o preço de venda ideal.</p>
+    </header>
+
+    <main>
+      <section class="card">
+        <h2>1. Ingredientes da receita</h2>
+        <div class="ingredient-form">
+          <input type="text" id="ing-nome" placeholder="Ingrediente (ex: Arroz)" />
+          <input type="number" id="ing-quantidade" placeholder="Qtd. usada" min="0" step="0.001" />
+          <select id="ing-unidade">
+            <option value="kg">kg</option>
+            <option value="g">g</option>
+            <option value="l">l</option>
+            <option value="ml">ml</option>
+            <option value="un">un</option>
+          </select>
+          <input type="number" id="ing-preco" placeholder="Preço por unidade (R$)" min="0" step="0.01" />
+          <button id="btn-add-ingrediente">Adicionar</button>
+        </div>
+
+        <table id="tabela-ingredientes">
+          <thead>
+            <tr>
+              <th>Ingrediente</th>
+              <th>Qtd. usada</th>
+              <th>Preço/unid.</th>
+              <th>Custo</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tbody-ingredientes"></tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3">Custo total dos ingredientes</td>
+              <td id="custo-total-ingredientes">R$ 0,00</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+        <p class="empty-hint" id="empty-hint">Nenhum ingrediente adicionado ainda.</p>
+      </section>
+
+      <section class="card">
+        <h2>2. Custos extras e rendimento</h2>
+        <div class="grid-2">
+          <label>
+            Embalagem por marmita (R$)
+            <input type="number" id="custo-embalagem" min="0" step="0.01" value="0" />
+          </label>
+          <label>
+            Outros custos fixos por marmita (R$)
+            <span class="hint">gás, energia, mão de obra rateada, etc.</span>
+            <input type="number" id="custo-extra" min="0" step="0.01" value="0" />
+          </label>
+          <label>
+            Rendimento da receita
+            <span class="hint">quantas marmitas essa receita produz</span>
+            <input type="number" id="rendimento" min="1" step="1" value="1" />
+          </label>
+          <label>
+            Margem de lucro desejada (%)
+            <input type="number" id="margem" min="0" step="1" value="30" />
+          </label>
+        </div>
+      </section>
+
+      <section class="card resultado">
+        <h2>3. Resultado</h2>
+        <div class="resultado-grid">
+          <div class="resultado-item">
+            <span class="label">Custo total da receita</span>
+            <span class="valor" id="res-custo-receita">R$ 0,00</span>
+          </div>
+          <div class="resultado-item destaque">
+            <span class="label">Custo por marmita</span>
+            <span class="valor" id="res-custo-marmita">R$ 0,00</span>
+          </div>
+          <div class="resultado-item destaque">
+            <span class="label">Preço de venda sugerido</span>
+            <span class="valor" id="res-preco-venda">R$ 0,00</span>
+          </div>
+          <div class="resultado-item">
+            <span class="label">Lucro por marmita</span>
+            <span class="valor" id="res-lucro">R$ 0,00</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <button id="btn-limpar">Limpar tudo</button>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
