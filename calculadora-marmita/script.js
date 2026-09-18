@@ -28,7 +28,15 @@ const el = {
   resPrecoVenda: document.getElementById('res-preco-venda'),
   resLucro: document.getElementById('res-lucro'),
   diagnostico: document.getElementById('diagnostico'),
-  btnLimpar: document.getElementById('btn-limpar')
+  btnLimpar: document.getElementById('btn-limpar'),
+  btnToggleAjudaPreco: document.getElementById('btn-toggle-ajuda-preco'),
+  ajudaPreco: document.getElementById('ajuda-preco'),
+  ajudaValorPago: document.getElementById('ajuda-valor-pago'),
+  ajudaQuantidade: document.getElementById('ajuda-quantidade'),
+  ajudaUnidade: document.getElementById('ajuda-unidade'),
+  ajudaPrecoValor: document.getElementById('ajuda-preco-valor'),
+  ajudaPrecoReferencia: document.getElementById('ajuda-preco-referencia'),
+  btnUsarPreco: document.getElementById('btn-usar-preco')
 }
 
 // Cada unidade tem uma "unidade de referência" (o que o preço informado representa)
@@ -39,6 +47,13 @@ const UNIDADES = {
   ml: { referencia: 'l', fator: 1 / 1000 },
   l: { referencia: 'l', fator: 1 },
   un: { referencia: 'un', fator: 1 }
+}
+
+// Unidades compatíveis (mesmo grupo) para a calculadora de "preço a partir da embalagem"
+const GRUPOS_UNIDADE = {
+  kg: ['g', 'kg'],
+  l: ['ml', 'l'],
+  un: ['un']
 }
 
 function formatarMoeda(valor) {
@@ -69,6 +84,50 @@ function unidadeReferenciaLabel(unidade) {
 
 function atualizarPlaceholderPreco() {
   el.preco.placeholder = labelPreco(el.unidade.value)
+}
+
+function referenciaAtual() {
+  return (UNIDADES[el.unidade.value] || UNIDADES.un).referencia
+}
+
+function atualizarOpcoesAjudaUnidade() {
+  const opcoes = GRUPOS_UNIDADE[referenciaAtual()] || ['un']
+  el.ajudaUnidade.innerHTML = opcoes.map((u) => `<option value="${u}">${u}</option>`).join('')
+}
+
+function calcularPrecoAjuda() {
+  const valorPago = Number(el.ajudaValorPago.value)
+  const quantidade = Number(el.ajudaQuantidade.value)
+  const config = UNIDADES[el.ajudaUnidade.value] || UNIDADES.un
+  const quantidadeEmReferencia = quantidade * config.fator
+  return quantidadeEmReferencia > 0 ? valorPago / quantidadeEmReferencia : 0
+}
+
+function atualizarResultadoAjudaPreco() {
+  const precoCalculado = calcularPrecoAjuda()
+  const referencia = (UNIDADES[el.ajudaUnidade.value] || UNIDADES.un).referencia
+  el.ajudaPrecoValor.textContent = formatarMoeda(precoCalculado)
+  el.ajudaPrecoReferencia.textContent = `/${referencia}`
+}
+
+function alternarAjudaPreco() {
+  const abrir = el.ajudaPreco.hidden
+  el.ajudaPreco.hidden = !abrir
+  if (abrir) {
+    atualizarOpcoesAjudaUnidade()
+    atualizarResultadoAjudaPreco()
+    el.ajudaValorPago.focus()
+  }
+}
+
+function usarPrecoCalculado() {
+  const precoCalculado = calcularPrecoAjuda()
+  if (precoCalculado <= 0) return
+  el.preco.value = precoCalculado.toFixed(2)
+  el.ajudaPreco.hidden = true
+  el.ajudaValorPago.value = ''
+  el.ajudaQuantidade.value = ''
+  el.nome.focus()
 }
 
 function salvar() {
@@ -215,7 +274,18 @@ el.btnAdd.addEventListener('click', adicionarIngrediente)
     if (e.key === 'Enter') adicionarIngrediente()
   })
 })
-el.unidade.addEventListener('change', atualizarPlaceholderPreco)
+el.unidade.addEventListener('change', () => {
+  atualizarPlaceholderPreco()
+  atualizarOpcoesAjudaUnidade()
+  atualizarResultadoAjudaPreco()
+})
+
+el.btnToggleAjudaPreco.addEventListener('click', alternarAjudaPreco)
+el.btnUsarPreco.addEventListener('click', usarPrecoCalculado)
+;[el.ajudaValorPago, el.ajudaQuantidade].forEach((input) => {
+  input.addEventListener('input', atualizarResultadoAjudaPreco)
+})
+el.ajudaUnidade.addEventListener('change', atualizarResultadoAjudaPreco)
 
 el.custoEmbalagem.addEventListener('input', () => {
   state.custoEmbalagem = Number(el.custoEmbalagem.value) || 0
@@ -251,4 +321,5 @@ el.btnLimpar.addEventListener('click', () => {
 carregar()
 sincronizarCamposComEstado()
 atualizarPlaceholderPreco()
+atualizarOpcoesAjudaUnidade()
 renderizar()

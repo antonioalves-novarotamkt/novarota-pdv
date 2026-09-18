@@ -222,6 +222,64 @@ select {
   gap: 8px;
 }
 
+.link-btn {
+  background: none;
+  border: none;
+  padding: 2px 0;
+  color: var(--brand-600);
+  font-size: 12px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: var(--brand-100);
+}
+
+.link-btn:hover {
+  color: var(--brand-700);
+}
+
+.ajuda-preco[hidden] {
+  display: none;
+}
+
+.ajuda-preco {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--brand-50);
+  border: 1px solid var(--brand-100);
+}
+
+.ajuda-preco-exemplo {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--slate-500);
+}
+
+.ajuda-preco-row {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr 0.7fr;
+  gap: 8px;
+}
+
+.ajuda-preco-resultado {
+  margin: 0;
+  font-size: 13px;
+  color: var(--slate-600);
+}
+
+.ajuda-preco-resultado strong {
+  color: var(--brand-700);
+  font-size: 15px;
+}
+
+#ajuda-preco-referencia {
+  color: var(--slate-500);
+}
+
 .btn-primary {
   background: var(--brand-600);
   color: white;
