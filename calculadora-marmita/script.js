@@ -15,7 +15,7 @@ const el = {
   unidade: document.getElementById('ing-unidade'),
   preco: document.getElementById('ing-preco'),
   btnAdd: document.getElementById('btn-add-ingrediente'),
-  tbody: document.getElementById('tbody-ingredientes'),
+  lista: document.getElementById('lista-ingredientes'),
   emptyHint: document.getElementById('empty-hint'),
   custoTotalIngredientes: document.getElementById('custo-total-ingredientes'),
   custoEmbalagem: document.getElementById('custo-embalagem'),
@@ -23,7 +23,7 @@ const el = {
   custoVariavel: document.getElementById('custo-variavel'),
   rendimento: document.getElementById('rendimento'),
   margem: document.getElementById('margem'),
-  resCustoReceita: document.getElementById('res-custo-receita'),
+  margemLabel: document.getElementById('margem-label'),
   resCustoMarmita: document.getElementById('res-custo-marmita'),
   resPrecoVenda: document.getElementById('res-preco-venda'),
   resLucro: document.getElementById('res-lucro'),
@@ -57,9 +57,14 @@ function custoIngrediente(ingrediente) {
 
 function labelPreco(unidade) {
   const config = UNIDADES[unidade] || UNIDADES.un
-  if (config.referencia === 'kg') return 'Preço por kg (R$)'
-  if (config.referencia === 'l') return 'Preço por litro (R$)'
-  return 'Preço por unidade (R$)'
+  if (config.referencia === 'kg') return 'Preço por kg'
+  if (config.referencia === 'l') return 'Preço por litro'
+  return 'Preço por unidade'
+}
+
+function unidadeReferenciaLabel(unidade) {
+  const config = UNIDADES[unidade] || UNIDADES.un
+  return config.referencia
 }
 
 function atualizarPlaceholderPreco() {
@@ -121,35 +126,16 @@ function sincronizarCamposComEstado() {
   el.custoVariavel.value = state.custoVariavel
   el.rendimento.value = state.rendimento
   el.margem.value = state.margem
-}
-
-function unidadeReferenciaLabel(unidade) {
-  const config = UNIDADES[unidade] || UNIDADES.un
-  return config.referencia
+  el.margemLabel.textContent = state.margem
 }
 
 function renderizarDiagnostico(precoVenda, custoIngredientesEEmbalagem, custoFixo, custoVariavel) {
   el.diagnostico.innerHTML = ''
 
   const itens = [
-    {
-      titulo: 'Ingredientes + embalagens',
-      valor: custoIngredientesEEmbalagem,
-      faixaMin: 28,
-      faixaMax: 35
-    },
-    {
-      titulo: 'Custos fixos',
-      valor: custoFixo,
-      faixaMin: 0,
-      faixaMax: 15
-    },
-    {
-      titulo: 'Custos variáveis',
-      valor: custoVariavel,
-      faixaMin: 0,
-      faixaMax: 15
-    }
+    { titulo: 'Ingredientes + embalagens', valor: custoIngredientesEEmbalagem, faixaMin: 28, faixaMax: 35 },
+    { titulo: 'Custos fixos', valor: custoFixo, faixaMin: 0, faixaMax: 15 },
+    { titulo: 'Custos variáveis', valor: custoVariavel, faixaMin: 0, faixaMax: 15 }
   ]
 
   itens.forEach((item) => {
@@ -160,8 +146,8 @@ function renderizarDiagnostico(precoVenda, custoIngredientesEEmbalagem, custoFix
     div.innerHTML = `
       <div>
         <div>${item.titulo}</div>
-        <div class="info">Recomendado: até ${item.faixaMax}% do preço de venda ${
-      item.faixaMin > 0 ? `(ideal entre ${item.faixaMin}% e ${item.faixaMax}%)` : ''
+        <div class="info">Recomendado: até ${item.faixaMax}% do preço de venda${
+      item.faixaMin > 0 ? ` (ideal entre ${item.faixaMin}% e ${item.faixaMax}%)` : ''
     }</div>
       </div>
       <span class="percentual">${formatarPercentual(percentual)}</span>
@@ -171,7 +157,7 @@ function renderizarDiagnostico(precoVenda, custoIngredientesEEmbalagem, custoFix
 }
 
 function renderizar() {
-  el.tbody.innerHTML = ''
+  el.lista.innerHTML = ''
   el.emptyHint.style.display = state.ingredientes.length === 0 ? 'block' : 'none'
 
   let custoIngredientes = 0
@@ -180,18 +166,24 @@ function renderizar() {
     const custo = custoIngrediente(ingrediente)
     custoIngredientes += custo
 
-    const tr = document.createElement('tr')
-    tr.innerHTML = `
-      <td>${ingrediente.nome}</td>
-      <td>${ingrediente.quantidade} ${ingrediente.unidade}</td>
-      <td>${formatarMoeda(ingrediente.preco)}/${unidadeReferenciaLabel(ingrediente.unidade)}</td>
-      <td>${formatarMoeda(custo)}</td>
-      <td><button class="remover" data-index="${index}">remover</button></td>
+    const li = document.createElement('li')
+    li.className = 'ingredient-row'
+    li.innerHTML = `
+      <div class="info">
+        <p>${ingrediente.nome}</p>
+        <span>${ingrediente.quantidade} ${ingrediente.unidade} · ${formatarMoeda(ingrediente.preco)}/${unidadeReferenciaLabel(
+      ingrediente.unidade
+    )}</span>
+      </div>
+      <div class="valores">
+        <span class="custo">${formatarMoeda(custo)}</span>
+        <button class="btn-remover" data-index="${index}" aria-label="Remover ${ingrediente.nome}">×</button>
+      </div>
     `
-    el.tbody.appendChild(tr)
+    el.lista.appendChild(li)
   })
 
-  el.tbody.querySelectorAll('button.remover').forEach((btn) => {
+  el.lista.querySelectorAll('button.btn-remover').forEach((btn) => {
     btn.addEventListener('click', () => removerIngrediente(Number(btn.dataset.index)))
   })
 
@@ -210,7 +202,6 @@ function renderizar() {
   const precoVenda = custoPorMarmita * (1 + margem / 100)
   const lucro = precoVenda - custoPorMarmita
 
-  el.resCustoReceita.textContent = formatarMoeda(custoIngredientes)
   el.resCustoMarmita.textContent = formatarMoeda(custoPorMarmita)
   el.resPrecoVenda.textContent = formatarMoeda(precoVenda)
   el.resLucro.textContent = formatarMoeda(lucro)
@@ -219,14 +210,10 @@ function renderizar() {
 }
 
 el.btnAdd.addEventListener('click', adicionarIngrediente)
-el.nome.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') adicionarIngrediente()
-})
-el.quantidade.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') adicionarIngrediente()
-})
-el.preco.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') adicionarIngrediente()
+;[el.nome, el.quantidade, el.preco].forEach((input) => {
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') adicionarIngrediente()
+  })
 })
 el.unidade.addEventListener('change', atualizarPlaceholderPreco)
 
@@ -252,6 +239,7 @@ el.rendimento.addEventListener('input', () => {
 })
 el.margem.addEventListener('input', () => {
   state.margem = Number(el.margem.value) || 0
+  el.margemLabel.textContent = state.margem
   salvar()
   renderizar()
 })
