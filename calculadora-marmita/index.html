@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculadora de Custo de Marmita</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="app">
+    <header class="app-header">
+      <div class="app-header-top">
+        <span class="badge-icon">🍱</span>
+        <div>
+          <h1>Calculadora de Custo de Marmita</h1>
+          <p class="subtitle">Monte a ficha técnica e descubra o preço de venda ideal</p>
+        </div>
+      </div>
+    </header>
+
+    <div class="content">
+      <section class="card">
+        <div class="card-header">
+          <span class="step">1</span>
+          <div>
+            <h2>Ingredientes</h2>
+            <p class="card-hint">Quantidade usada em uma marmita e o preço médio de compra.</p>
+          </div>
+        </div>
+
+        <div class="ingredient-form">
+          <label>
+            <span>Ingrediente</span>
+            <input type="text" id="ing-nome" placeholder="Ex: Arroz" />
+          </label>
+          <div class="ingredient-form-row">
+            <label>
+              <span>Quantidade</span>
+              <input type="number" id="ing-quantidade" placeholder="Ex: 100" min="0" step="0.001" />
+            </label>
+            <label>
+              <span>Unidade</span>
+              <select id="ing-unidade">
+                <option value="g">g</option>
+                <option value="kg">kg</option>
+                <option value="ml">ml</option>
+                <option value="l">l</option>
+                <option value="un">un</option>
+              </select>
+            </label>
+            <label>
+              <span>Preço</span>
+              <input type="number" id="ing-preco" placeholder="Preço por kg" min="0" step="0.01" />
+            </label>
+          </div>
+
+          <button type="button" id="btn-toggle-ajuda-preco" class="link-btn">
+            Não sabe o preço por kg? Calcular a partir da embalagem que você comprou
+          </button>
+
+          <div id="ajuda-preco" class="ajuda-preco" hidden>
+            <p class="ajuda-preco-exemplo">Ex: pagou R$20,00 por um pacote de 5kg de arroz → R$4,00/kg</p>
+            <div class="ajuda-preco-row">
+              <label>
+                <span>Valor pago</span>
+                <div class="input-prefix">
+                  <span>R$</span>
+                  <input type="number" id="ajuda-valor-pago" placeholder="0,00" min="0" step="0.01" />
+                </div>
+              </label>
+              <label>
+                <span>Qtd. da embalagem</span>
+                <input type="number" id="ajuda-quantidade" placeholder="Ex: 5" min="0" step="0.001" />
+              </label>
+              <label>
+                <span>Unidade</span>
+                <select id="ajuda-unidade"></select>
+              </label>
+            </div>
+            <p class="ajuda-preco-resultado">
+              Preço calculado: <strong id="ajuda-preco-valor">R$ 0,00</strong><span id="ajuda-preco-referencia">/kg</span>
+            </p>
+            <button type="button" id="btn-usar-preco" class="btn-secondary">Usar este preço</button>
+          </div>
+
+          <button id="btn-add-ingrediente" class="btn-primary">Adicionar ingrediente</button>
+        </div>
+
+        <ul id="lista-ingredientes" class="ingredient-list"></ul>
+        <p class="empty-hint" id="empty-hint">Nenhum ingrediente adicionado ainda.</p>
+
+        <div class="ingredient-total">
+          <span>Custo total dos ingredientes</span>
+          <strong id="custo-total-ingredientes">R$ 0,00</strong>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <span class="step">2</span>
+          <div>
+            <h2>Embalagem e custos operacionais</h2>
+            <p class="card-hint">Aluguel, luz, água, gás, entrega e mão de obra rateados por marmita.</p>
+          </div>
+        </div>
+
+        <div class="field-grid">
+          <label>
+            <span>Embalagem por marmita</span>
+            <div class="input-prefix">
+              <span>R$</span>
+              <input type="number" id="custo-embalagem" min="0" step="0.01" value="0" />
+            </div>
+          </label>
+          <label>
+            <span>Rendimento da receita</span>
+            <input type="number" id="rendimento" min="1" step="1" value="1" />
+            <small>quantas marmitas essa lista de ingredientes produz</small>
+          </label>
+          <label>
+            <span>Custos fixos por marmita</span>
+            <div class="input-prefix">
+              <span>R$</span>
+              <input type="number" id="custo-fixo" min="0" step="0.01" value="0" />
+            </div>
+          </label>
+          <label>
+            <span>Custos variáveis por marmita</span>
+            <div class="input-prefix">
+              <span>R$</span>
+              <input type="number" id="custo-variavel" min="0" step="0.01" value="0" />
+            </div>
+          </label>
+        </div>
+
+        <button type="button" id="btn-toggle-ajuda-fixo" class="link-btn">
+          Não sabe seu custo fixo por marmita? Calcular a partir das contas do mês
+        </button>
+
+        <div id="ajuda-fixo" class="ajuda-preco" hidden>
+          <p class="ajuda-preco-exemplo">
+            Some as contas fixas do mês e informe quantas marmitas você vende por mês em média.
+          </p>
+          <div class="ajuda-fixo-grid">
+            <label>
+              <span>Aluguel (R$/mês)</span>
+              <input type="number" id="ajuda-aluguel" placeholder="0,00" min="0" step="0.01" />
+            </label>
+            <label>
+              <span>Luz (R$/mês)</span>
+              <input type="number" id="ajuda-luz" placeholder="0,00" min="0" step="0.01" />
+            </label>
+            <label>
+              <span>Água (R$/mês)</span>
+              <input type="number" id="ajuda-agua" placeholder="0,00" min="0" step="0.01" />
+            </label>
+            <label>
+              <span>Gás (R$/mês)</span>
+              <input type="number" id="ajuda-gas" placeholder="0,00" min="0" step="0.01" />
+            </label>
+            <label>
+              <span>Outros (salários, etc.)</span>
+              <input type="number" id="ajuda-outros-fixos" placeholder="0,00" min="0" step="0.01" />
+            </label>
+            <label>
+              <span>Marmitas vendidas/mês</span>
+              <input type="number" id="ajuda-vendas-mes" placeholder="Ex: 950" min="1" step="1" />
+            </label>
+          </div>
+          <p class="ajuda-preco-resultado">
+            Custo fixo por marmita: <strong id="ajuda-fixo-valor">R$ 0,00</strong>
+          </p>
+          <button type="button" id="btn-usar-fixo" class="btn-secondary">Usar este valor</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <span class="step">3</span>
+          <div>
+            <h2>Margem de lucro</h2>
+            <p class="card-hint">A margem recomendada para marmitex costuma ficar em torno de 50%.</p>
+          </div>
+        </div>
+
+        <div class="margem-slider">
+          <input type="range" id="margem" min="0" max="150" step="1" value="50" />
+          <span class="margem-valor"><span id="margem-label">50</span>%</span>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <span class="step">4</span>
+          <div>
+            <h2>Diagnóstico da estrutura de custos</h2>
+            <p class="card-hint">Percentual de cada custo em relação ao preço de venda sugerido.</p>
+          </div>
+        </div>
+        <div id="diagnostico" class="diagnostico"></div>
+      </section>
+
+      <section class="card cta-card">
+        <div class="card-header">
+          <span class="step">5</span>
+          <div>
+            <h2>Receba esta análise em PDF</h2>
+            <p class="card-hint">
+              Preencha seus dados para baixar um PDF com o resumo completo desta simulação.
+            </p>
+          </div>
+        </div>
+
+        <button type="button" id="btn-abrir-lead" class="btn-primary">Gerar meu PDF</button>
+
+        <form id="form-lead" class="lead-form" hidden>
+          <label>
+            <span>Nome</span>
+            <input type="text" id="lead-nome" placeholder="Seu nome" autocomplete="name" required />
+          </label>
+          <label>
+            <span>WhatsApp</span>
+            <input
+              type="tel"
+              id="lead-telefone"
+              placeholder="(11) 90000-0000"
+              autocomplete="tel"
+              required
+            />
+          </label>
+          <label>
+            <span>E-mail</span>
+            <input type="email" id="lead-email" placeholder="voce@email.com" autocomplete="email" required />
+          </label>
+          <input type="text" id="lead-website" name="website" class="hp-field" tabindex="-1" autocomplete="off" />
+          <button type="submit" id="btn-enviar-lead" class="btn-primary">Baixar meu PDF</button>
+          <p class="lead-status" id="lead-status" hidden></p>
+        </form>
+      </section>
+
+      <div class="footer-actions">
+        <button id="btn-limpar" class="btn-secondary">Limpar tudo</button>
+      </div>
+    </div>
+
+    <div class="summary-bar">
+      <div class="summary-bar-inner">
+        <div class="summary-item">
+          <span class="label">Custo por marmita</span>
+          <span class="valor" id="res-custo-marmita">R$ 0,00</span>
+        </div>
+        <div class="summary-item destaque">
+          <span class="label">Preço de venda sugerido</span>
+          <span class="valor" id="res-preco-venda">R$ 0,00</span>
+        </div>
+        <div class="summary-item">
+          <span class="label">Lucro por marmita</span>
+          <span class="valor lucro" id="res-lucro">R$ 0,00</span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
