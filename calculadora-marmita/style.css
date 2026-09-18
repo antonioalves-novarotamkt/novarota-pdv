@@ -265,6 +265,12 @@ select {
   gap: 8px;
 }
 
+.ajuda-fixo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
 .ajuda-preco-resultado {
   margin: 0;
   font-size: 13px;

@@ -117,6 +117,28 @@
             </div>
           </label>
         </div>
+
+        <button type="button" id="btn-toggle-ajuda-fixo" class="link-btn">
+          Não sabe seu custo fixo por marmita? Calcular a partir das contas do mês
+        </button>
+
+        <div id="ajuda-fixo" class="ajuda-preco" hidden>
+          <p class="ajuda-preco-exemplo">
+            Some as contas fixas do mês e informe quantas marmitas você vende por mês em média.
+          </p>
+          <div class="ajuda-fixo-grid">
+            <input type="number" id="ajuda-aluguel" placeholder="Aluguel (R$/mês)" min="0" step="0.01" />
+            <input type="number" id="ajuda-luz" placeholder="Luz (R$/mês)" min="0" step="0.01" />
+            <input type="number" id="ajuda-agua" placeholder="Água (R$/mês)" min="0" step="0.01" />
+            <input type="number" id="ajuda-gas" placeholder="Gás (R$/mês)" min="0" step="0.01" />
+            <input type="number" id="ajuda-outros-fixos" placeholder="Outros (salários, etc.)" min="0" step="0.01" />
+            <input type="number" id="ajuda-vendas-mes" placeholder="Marmitas vendidas/mês" min="1" step="1" />
+          </div>
+          <p class="ajuda-preco-resultado">
+            Custo fixo por marmita: <strong id="ajuda-fixo-valor">R$ 0,00</strong>
+          </p>
+          <button type="button" id="btn-usar-fixo" class="btn-secondary">Usar este valor</button>
+        </div>
       </section>
 
       <section class="card">

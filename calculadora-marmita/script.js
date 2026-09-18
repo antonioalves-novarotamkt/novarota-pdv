@@ -36,7 +36,17 @@ const el = {
   ajudaUnidade: document.getElementById('ajuda-unidade'),
   ajudaPrecoValor: document.getElementById('ajuda-preco-valor'),
   ajudaPrecoReferencia: document.getElementById('ajuda-preco-referencia'),
-  btnUsarPreco: document.getElementById('btn-usar-preco')
+  btnUsarPreco: document.getElementById('btn-usar-preco'),
+  btnToggleAjudaFixo: document.getElementById('btn-toggle-ajuda-fixo'),
+  ajudaFixo: document.getElementById('ajuda-fixo'),
+  ajudaAluguel: document.getElementById('ajuda-aluguel'),
+  ajudaLuz: document.getElementById('ajuda-luz'),
+  ajudaAgua: document.getElementById('ajuda-agua'),
+  ajudaGas: document.getElementById('ajuda-gas'),
+  ajudaOutrosFixos: document.getElementById('ajuda-outros-fixos'),
+  ajudaVendasMes: document.getElementById('ajuda-vendas-mes'),
+  ajudaFixoValor: document.getElementById('ajuda-fixo-valor'),
+  btnUsarFixo: document.getElementById('btn-usar-fixo')
 }
 
 // Cada unidade tem uma "unidade de referência" (o que o preço informado representa)
@@ -128,6 +138,38 @@ function usarPrecoCalculado() {
   el.ajudaValorPago.value = ''
   el.ajudaQuantidade.value = ''
   el.nome.focus()
+}
+
+function calcularCustoFixoAjuda() {
+  const totalMensal = [el.ajudaAluguel, el.ajudaLuz, el.ajudaAgua, el.ajudaGas, el.ajudaOutrosFixos].reduce(
+    (soma, input) => soma + (Number(input.value) || 0),
+    0
+  )
+  const vendasMes = Number(el.ajudaVendasMes.value)
+  return vendasMes > 0 ? totalMensal / vendasMes : 0
+}
+
+function atualizarResultadoAjudaFixo() {
+  el.ajudaFixoValor.textContent = formatarMoeda(calcularCustoFixoAjuda())
+}
+
+function alternarAjudaFixo() {
+  const abrir = el.ajudaFixo.hidden
+  el.ajudaFixo.hidden = !abrir
+  if (abrir) {
+    atualizarResultadoAjudaFixo()
+    el.ajudaAluguel.focus()
+  }
+}
+
+function usarCustoFixoCalculado() {
+  const valorCalculado = calcularCustoFixoAjuda()
+  if (valorCalculado <= 0) return
+  state.custoFixo = Math.round((valorCalculado + Number.EPSILON) * 100) / 100
+  el.custoFixo.value = state.custoFixo
+  salvar()
+  renderizar()
+  el.ajudaFixo.hidden = true
 }
 
 function salvar() {
@@ -286,6 +328,14 @@ el.btnUsarPreco.addEventListener('click', usarPrecoCalculado)
   input.addEventListener('input', atualizarResultadoAjudaPreco)
 })
 el.ajudaUnidade.addEventListener('change', atualizarResultadoAjudaPreco)
+
+el.btnToggleAjudaFixo.addEventListener('click', alternarAjudaFixo)
+el.btnUsarFixo.addEventListener('click', usarCustoFixoCalculado)
+;[el.ajudaAluguel, el.ajudaLuz, el.ajudaAgua, el.ajudaGas, el.ajudaOutrosFixos, el.ajudaVendasMes].forEach(
+  (input) => {
+    input.addEventListener('input', atualizarResultadoAjudaFixo)
+  }
+)
 
 el.custoEmbalagem.addEventListener('input', () => {
   state.custoEmbalagem = Number(el.custoEmbalagem.value) || 0
