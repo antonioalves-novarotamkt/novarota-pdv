@@ -206,6 +206,44 @@
         <div id="diagnostico" class="diagnostico"></div>
       </section>
 
+      <section class="card cta-card">
+        <div class="card-header">
+          <span class="step">5</span>
+          <div>
+            <h2>Receba esta análise em PDF</h2>
+            <p class="card-hint">
+              Preencha seus dados para baixar um PDF com o resumo completo desta simulação.
+            </p>
+          </div>
+        </div>
+
+        <button type="button" id="btn-abrir-lead" class="btn-primary">Gerar meu PDF</button>
+
+        <form id="form-lead" class="lead-form" hidden>
+          <label>
+            <span>Nome</span>
+            <input type="text" id="lead-nome" placeholder="Seu nome" autocomplete="name" required />
+          </label>
+          <label>
+            <span>WhatsApp</span>
+            <input
+              type="tel"
+              id="lead-telefone"
+              placeholder="(11) 90000-0000"
+              autocomplete="tel"
+              required
+            />
+          </label>
+          <label>
+            <span>E-mail</span>
+            <input type="email" id="lead-email" placeholder="voce@email.com" autocomplete="email" required />
+          </label>
+          <input type="text" id="lead-website" name="website" class="hp-field" tabindex="-1" autocomplete="off" />
+          <button type="submit" id="btn-enviar-lead" class="btn-primary">Baixar meu PDF</button>
+          <p class="lead-status" id="lead-status" hidden></p>
+        </form>
+      </section>
+
       <div class="footer-actions">
         <button id="btn-limpar" class="btn-secondary">Limpar tudo</button>
       </div>
@@ -229,6 +267,7 @@
     </div>
   </main>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

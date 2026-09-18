@@ -46,8 +46,24 @@ const el = {
   ajudaOutrosFixos: document.getElementById('ajuda-outros-fixos'),
   ajudaVendasMes: document.getElementById('ajuda-vendas-mes'),
   ajudaFixoValor: document.getElementById('ajuda-fixo-valor'),
-  btnUsarFixo: document.getElementById('btn-usar-fixo')
+  btnUsarFixo: document.getElementById('btn-usar-fixo'),
+  btnAbrirLead: document.getElementById('btn-abrir-lead'),
+  formLead: document.getElementById('form-lead'),
+  leadNome: document.getElementById('lead-nome'),
+  leadTelefone: document.getElementById('lead-telefone'),
+  leadEmail: document.getElementById('lead-email'),
+  leadWebsite: document.getElementById('lead-website'),
+  btnEnviarLead: document.getElementById('btn-enviar-lead'),
+  leadStatus: document.getElementById('lead-status')
 }
+
+const EMPRESA = {
+  nome: 'NovaRota Marketing',
+  telefone: '(11) 94969-4607',
+  email: 'antonio.alves@novarotamkt.com.br'
+}
+
+const LEAD_ENDPOINT = 'capturar-lead.php'
 
 // Cada unidade tem uma "unidade de referência" (o que o preço informado representa)
 // e um fator de conversão da quantidade usada para essa referência.
@@ -230,20 +246,50 @@ function sincronizarCamposComEstado() {
   el.margemLabel.textContent = state.margem
 }
 
-function renderizarDiagnostico(precoVenda, custoIngredientesEEmbalagem, custoFixo, custoVariavel) {
-  el.diagnostico.innerHTML = ''
+function calcularResumo() {
+  const custoIngredientes = state.ingredientes.reduce((soma, ing) => soma + custoIngrediente(ing), 0)
 
-  const itens = [
+  const rendimento = Math.max(1, state.rendimento || 1)
+  const custoIngredientesPorMarmita = custoIngredientes / rendimento
+  const custoEmbalagem = Number(state.custoEmbalagem || 0)
+  const custoFixo = Number(state.custoFixo || 0)
+  const custoVariavel = Number(state.custoVariavel || 0)
+
+  const custoIngredientesEEmbalagem = custoIngredientesPorMarmita + custoEmbalagem
+  const custoPorMarmita = custoIngredientesEEmbalagem + custoFixo + custoVariavel
+
+  const margem = Math.max(0, state.margem || 0)
+  const precoVenda = custoPorMarmita * (1 + margem / 100)
+  const lucro = precoVenda - custoPorMarmita
+
+  const diagnosticoItens = [
     { titulo: 'Ingredientes + embalagens', valor: custoIngredientesEEmbalagem, faixaMin: 28, faixaMax: 35 },
     { titulo: 'Custos fixos', valor: custoFixo, faixaMin: 0, faixaMax: 15 },
     { titulo: 'Custos variáveis', valor: custoVariavel, faixaMin: 0, faixaMax: 15 }
-  ]
-
-  itens.forEach((item) => {
+  ].map((item) => {
     const percentual = precoVenda > 0 ? (item.valor / precoVenda) * 100 : 0
-    const dentroDaFaixa = percentual >= item.faixaMin && percentual <= item.faixaMax
+    return { ...item, percentual, dentroDaFaixa: percentual >= item.faixaMin && percentual <= item.faixaMax }
+  })
+
+  return {
+    custoIngredientes,
+    custoEmbalagem,
+    custoFixo,
+    custoVariavel,
+    custoPorMarmita,
+    margem,
+    precoVenda,
+    lucro,
+    diagnosticoItens
+  }
+}
+
+function renderizarDiagnostico(diagnosticoItens) {
+  el.diagnostico.innerHTML = ''
+
+  diagnosticoItens.forEach((item) => {
     const div = document.createElement('div')
-    div.className = `diagnostico-item ${dentroDaFaixa ? 'ok' : 'alerta'}`
+    div.className = `diagnostico-item ${item.dentroDaFaixa ? 'ok' : 'alerta'}`
     div.innerHTML = `
       <div>
         <div>${item.titulo}</div>
@@ -251,7 +297,7 @@ function renderizarDiagnostico(precoVenda, custoIngredientesEEmbalagem, custoFix
       item.faixaMin > 0 ? ` (ideal entre ${item.faixaMin}% e ${item.faixaMax}%)` : ''
     }</div>
       </div>
-      <span class="percentual">${formatarPercentual(percentual)}</span>
+      <span class="percentual">${formatarPercentual(item.percentual)}</span>
     `
     el.diagnostico.appendChild(div)
   })
@@ -261,11 +307,8 @@ function renderizar() {
   el.lista.innerHTML = ''
   el.emptyHint.style.display = state.ingredientes.length === 0 ? 'block' : 'none'
 
-  let custoIngredientes = 0
-
   state.ingredientes.forEach((ingrediente, index) => {
     const custo = custoIngrediente(ingrediente)
-    custoIngredientes += custo
 
     const li = document.createElement('li')
     li.className = 'ingredient-row'
@@ -288,27 +331,215 @@ function renderizar() {
     btn.addEventListener('click', () => removerIngrediente(Number(btn.dataset.index)))
   })
 
-  el.custoTotalIngredientes.textContent = formatarMoeda(custoIngredientes)
+  const resumo = calcularResumo()
 
-  const rendimento = Math.max(1, state.rendimento || 1)
-  const custoIngredientesPorMarmita = custoIngredientes / rendimento
-  const custoEmbalagem = Number(state.custoEmbalagem || 0)
-  const custoFixo = Number(state.custoFixo || 0)
-  const custoVariavel = Number(state.custoVariavel || 0)
+  el.custoTotalIngredientes.textContent = formatarMoeda(resumo.custoIngredientes)
+  el.resCustoMarmita.textContent = formatarMoeda(resumo.custoPorMarmita)
+  el.resPrecoVenda.textContent = formatarMoeda(resumo.precoVenda)
+  el.resLucro.textContent = formatarMoeda(resumo.lucro)
 
-  const custoIngredientesEEmbalagem = custoIngredientesPorMarmita + custoEmbalagem
-  const custoPorMarmita = custoIngredientesEEmbalagem + custoFixo + custoVariavel
-
-  const margem = Math.max(0, state.margem || 0)
-  const precoVenda = custoPorMarmita * (1 + margem / 100)
-  const lucro = precoVenda - custoPorMarmita
-
-  el.resCustoMarmita.textContent = formatarMoeda(custoPorMarmita)
-  el.resPrecoVenda.textContent = formatarMoeda(precoVenda)
-  el.resLucro.textContent = formatarMoeda(lucro)
-
-  renderizarDiagnostico(precoVenda, custoIngredientesEEmbalagem, custoFixo, custoVariavel)
+  renderizarDiagnostico(resumo.diagnosticoItens)
 }
+
+function gerarPdfAnalise(lead, resumo) {
+  const { jsPDF } = window.jspdf
+  const doc = new jsPDF()
+  const margemEsquerda = 15
+  let y = 20
+
+  doc.setFont('times', 'bold')
+  doc.setFontSize(20)
+  doc.setTextColor(237, 102, 14)
+  doc.text('novarota', margemEsquerda, y)
+  const larguraNovarota = doc.getTextWidth('novarota')
+
+  doc.setFont('times', 'italic')
+  doc.setFontSize(13)
+  doc.setTextColor(21, 52, 86)
+  doc.text(' marketing.', margemEsquerda + larguraNovarota, y)
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9)
+  doc.setTextColor(100, 116, 139)
+  y += 6
+  doc.text(`${EMPRESA.telefone} · ${EMPRESA.email}`, margemEsquerda, y)
+
+  y += 4
+  doc.setDrawColor(226, 232, 240)
+  doc.line(margemEsquerda, y, 195, y)
+
+  y += 10
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(13)
+  doc.setTextColor(15, 23, 42)
+  doc.text('Análise de custo de marmita', margemEsquerda, y)
+
+  y += 7
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(10)
+  doc.text(`Preparado para: ${lead.nome}`, margemEsquerda, y)
+  y += 5
+  doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, margemEsquerda, y)
+
+  y += 10
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(11)
+  doc.text('Ingredientes', margemEsquerda, y)
+  y += 6
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9)
+
+  if (state.ingredientes.length === 0) {
+    doc.text('Nenhum ingrediente informado.', margemEsquerda, y)
+    y += 5
+  } else {
+    state.ingredientes.forEach((ingrediente) => {
+      const custo = custoIngrediente(ingrediente)
+      doc.text(
+        `${ingrediente.nome} — ${ingrediente.quantidade}${ingrediente.unidade} (${formatarMoeda(
+          ingrediente.preco
+        )}/${unidadeReferenciaLabel(ingrediente.unidade)})`,
+        margemEsquerda,
+        y
+      )
+      doc.text(formatarMoeda(custo), 195, y, { align: 'right' })
+      y += 5.5
+    })
+  }
+
+  y += 4
+  doc.setDrawColor(226, 232, 240)
+  doc.line(margemEsquerda, y, 195, y)
+  y += 9
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(11)
+  doc.text('Custos', margemEsquerda, y)
+  y += 6
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9.5)
+
+  const linhasCusto = [
+    ['Ingredientes (total)', formatarMoeda(resumo.custoIngredientes)],
+    ['Embalagem por marmita', formatarMoeda(resumo.custoEmbalagem)],
+    ['Custos fixos por marmita', formatarMoeda(resumo.custoFixo)],
+    ['Custos variáveis por marmita', formatarMoeda(resumo.custoVariavel)]
+  ]
+  linhasCusto.forEach(([label, valor]) => {
+    doc.text(label, margemEsquerda, y)
+    doc.text(valor, 195, y, { align: 'right' })
+    y += 5.5
+  })
+
+  y += 6
+  doc.setFillColor(238, 247, 255)
+  doc.roundedRect(margemEsquerda, y - 5, 180, 26, 2, 2, 'F')
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(10)
+  doc.setTextColor(26, 79, 173)
+  doc.text(`Custo por marmita: ${formatarMoeda(resumo.custoPorMarmita)}`, margemEsquerda + 4, y + 2)
+  doc.text(`Preço de venda sugerido (margem ${resumo.margem}%): ${formatarMoeda(resumo.precoVenda)}`, margemEsquerda + 4, y + 9)
+  const corLucro = resumo.lucro >= 0 ? [21, 128, 61] : [220, 38, 38]
+  doc.setTextColor(...corLucro)
+  doc.text(
+    `${resumo.lucro >= 0 ? 'Lucro' : 'Prejuízo'} por marmita: ${formatarMoeda(Math.abs(resumo.lucro))}`,
+    margemEsquerda + 4,
+    y + 16
+  )
+
+  y += 30
+  doc.setTextColor(15, 23, 42)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(11)
+  doc.text('Diagnóstico da estrutura de custos', margemEsquerda, y)
+  y += 6
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9.5)
+  resumo.diagnosticoItens.forEach((item) => {
+    const cor = item.dentroDaFaixa ? [21, 128, 61] : [180, 83, 9]
+    doc.setTextColor(...cor)
+    doc.text(
+      `${item.dentroDaFaixa ? 'OK' : 'Atenção'} — ${item.titulo}: ${item.percentual.toFixed(1)}% do preço de venda`,
+      margemEsquerda,
+      y
+    )
+    y += 5.5
+  })
+
+  doc.setTextColor(100, 116, 139)
+  doc.setFontSize(8.5)
+  doc.text(
+    `Quer ajuda para deixar seu negócio mais lucrativo? Fale com a ${EMPRESA.nome}: ${EMPRESA.telefone} · ${EMPRESA.email}`,
+    margemEsquerda,
+    285
+  )
+
+  doc.save(`analise-marmita-${lead.nome.trim().replace(/\s+/g, '-').toLowerCase()}.pdf`)
+}
+
+async function enviarLead(lead, resumo) {
+  const resposta = await fetch(LEAD_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      nome: lead.nome,
+      telefone: lead.telefone,
+      email: lead.email,
+      custoPorMarmita: resumo.custoPorMarmita,
+      precoVenda: resumo.precoVenda,
+      lucro: resumo.lucro
+    })
+  })
+  if (!resposta.ok) throw new Error('Falha ao registrar contato')
+}
+
+function mostrarStatusLead(texto, tipo) {
+  el.leadStatus.hidden = false
+  el.leadStatus.textContent = texto
+  el.leadStatus.className = `lead-status ${tipo}`
+}
+
+async function processarEnvioLead(evento) {
+  evento.preventDefault()
+
+  if (el.leadWebsite.value.trim() !== '') return // honeypot: provável bot, ignora silenciosamente
+
+  const lead = {
+    nome: el.leadNome.value.trim(),
+    telefone: el.leadTelefone.value.trim(),
+    email: el.leadEmail.value.trim()
+  }
+  if (!lead.nome || !lead.telefone || !lead.email) return
+
+  el.btnEnviarLead.disabled = true
+  mostrarStatusLead('Gerando seu PDF...', 'carregando')
+
+  const resumo = calcularResumo()
+
+  try {
+    gerarPdfAnalise(lead, resumo)
+  } catch {
+    mostrarStatusLead('Não foi possível gerar o PDF agora. Tente novamente em instantes.', 'erro')
+    el.btnEnviarLead.disabled = false
+    return
+  }
+
+  try {
+    await enviarLead(lead, resumo)
+    mostrarStatusLead('PDF baixado! Recebemos seus dados e em breve entraremos em contato.', 'sucesso')
+  } catch {
+    mostrarStatusLead('PDF baixado! Não conseguimos registrar seu contato agora — tente novamente mais tarde.', 'erro')
+  } finally {
+    el.btnEnviarLead.disabled = false
+  }
+}
+
+el.btnAbrirLead.addEventListener('click', () => {
+  el.btnAbrirLead.hidden = true
+  el.formLead.hidden = false
+  el.leadNome.focus()
+})
+el.formLead.addEventListener('submit', processarEnvioLead)
 
 el.btnAdd.addEventListener('click', adicionarIngrediente)
 ;[el.nome, el.quantidade, el.preco].forEach((input) => {

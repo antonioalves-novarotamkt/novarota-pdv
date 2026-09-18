@@ -474,6 +474,57 @@ select {
   font-size: 15px;
 }
 
+.cta-card {
+  border-color: var(--brand-100);
+  background: linear-gradient(180deg, var(--brand-50), #ffffff 60%);
+}
+
+.cta-card .btn-primary {
+  width: 100%;
+}
+
+.lead-form[hidden] {
+  display: none;
+}
+
+.lead-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.hp-field {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.lead-status {
+  margin: 0;
+  font-size: 12.5px;
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+.lead-status.sucesso {
+  background: var(--emerald-50);
+  color: #15803d;
+}
+
+.lead-status.erro {
+  background: var(--red-50);
+  color: var(--red-600);
+}
+
+.lead-status.carregando {
+  background: var(--slate-100);
+  color: var(--slate-600);
+}
+
 .footer-actions {
   display: flex;
   justify-content: center;
