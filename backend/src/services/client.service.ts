@@ -33,6 +33,7 @@ export async function getClientsByUser(userId: string) {
   return prisma.client.findMany({
     where: { userId },
     orderBy: { createdAt: 'desc' },
+    include: { _count: { select: { products: true } } },
   });
 }
 

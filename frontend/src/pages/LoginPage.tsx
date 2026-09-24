@@ -1,7 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 import { apiClient, API_URL } from '../services/api';
 import { useAuthStore } from '../store/auth';
+import { BrandLogo } from '../components/BrandLogo';
+
+const inputClass =
+  'w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent';
 
 export function LoginPage() {
   const [email, setEmail] = useState('');
@@ -19,12 +24,9 @@ export function LoginPage() {
     setLoading(true);
 
     try {
-      let response;
-      if (isRegister) {
-        response = await apiClient.register(email, password, name);
-      } else {
-        response = await apiClient.login(email, password);
-      }
+      const response = isRegister
+        ? await apiClient.register(email, password, name)
+        : await apiClient.login(email, password);
 
       const { user, accessToken } = response;
       apiClient.setToken(accessToken);
@@ -42,73 +44,64 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <h1 className="text-3xl font-bold text-center mb-2">🍽️ Menu Manager</h1>
-          <p className="text-center text-gray-600 mb-8">
-            {isRegister ? 'Criar conta' : 'Acessar'}
+    <div className="min-h-screen bg-sidebar flex items-center justify-center p-4">
+      <div className="w-full max-w-sm rounded-xl bg-white p-8 shadow-xl">
+        <div className="mb-6 flex flex-col items-center gap-2">
+          <BrandLogo height={64} />
+          <p className="text-xs text-slate-500">
+            {isRegister ? 'Crie sua conta para gerenciar cardápios' : 'Entre para gerenciar seus cardápios'}
           </p>
+        </div>
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
-              {error}
-            </div>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          {isRegister && (
+            <input
+              type="text"
+              placeholder="Nome"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className={inputClass}
+              required
+            />
           )}
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={inputClass}
+            required
+          />
+          <input
+            type="password"
+            placeholder="Senha"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className={inputClass}
+            required
+          />
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {isRegister && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Nome</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full mt-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  required
-                />
-              </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full mt-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Senha</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full mt-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                required
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-green-600 text-white py-2 rounded-lg font-medium hover:bg-green-700 disabled:opacity-50"
-            >
-              {loading ? 'Carregando...' : isRegister ? 'Registrar' : 'Entrar'}
-            </button>
-          </form>
+          {error && <p className="text-xs text-red-500">{error}</p>}
 
           <button
-            type="button"
-            onClick={() => setIsRegister(!isRegister)}
-            className="w-full mt-4 text-center text-sm text-gray-600 hover:text-gray-800"
+            type="submit"
+            disabled={loading}
+            className="flex w-full items-center justify-center rounded-md bg-orange-600 py-2 text-sm font-medium text-white hover:bg-orange-700 disabled:opacity-50"
           >
-            {isRegister ? 'Já tem conta? Entrar' : 'Não tem conta? Registrar'}
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : isRegister ? 'Criar conta' : 'Entrar'}
           </button>
-        </div>
+        </form>
+
+        <button
+          type="button"
+          onClick={() => {
+            setIsRegister(!isRegister);
+            setError('');
+          }}
+          className="mt-4 block w-full text-center text-xs text-slate-500 hover:text-slate-700"
+        >
+          {isRegister ? 'Já tem conta? Entrar' : 'Não tem conta? Criar conta'}
+        </button>
       </div>
     </div>
   );
