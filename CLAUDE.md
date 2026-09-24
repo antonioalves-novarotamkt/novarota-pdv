@@ -164,6 +164,11 @@ Backend: http://localhost:3000
   - Tudo ou nada: se uma linha tiver erro, nada é gravado e a resposta traz `details: [{row, message}]`
   - Correspondência: pelo Código (SKU) quando preenchido, senão pelo nome. Célula vazia de SKU não apaga o código existente
   - O SKU é único por cliente (`@@unique([clientId, sku])`), não no sistema inteiro
+- [x] Esqueci minha senha (`backend/src/services/password-reset.service.ts`, `backend/src/utils/mailer.ts`)
+  - `POST /api/auth/forgot-password` sempre responde igual e envia o email sem `await`, para não revelar quais emails existem
+  - `POST /api/auth/reset-password`: link vale 1 hora, uso único; o banco guarda só o SHA-256 do token
+  - SMTP via nodemailer com as mesmas variáveis do NovaRotaAdm (`EMAIL_SERVER_*`, `EMAIL_FROM`) + `APP_URL` para montar o link
+  - Sem SMTP configurado, em desenvolvimento o link é impresso no log do servidor
 
 ## 📋 Próximos Passos
 

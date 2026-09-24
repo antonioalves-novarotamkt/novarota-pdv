@@ -64,6 +64,18 @@ CORS_ORIGIN=https://novarota-pdv.vercel.app
 ```
 O Railway vai reiniciar o serviço automaticamente.
 
+### Passo 5: Email para "Esqueci minha senha"
+No serviço do backend, adicione as variáveis de SMTP. Os nomes são os mesmos do NovaRotaAdm, então dá para copiar os valores de lá:
+```
+APP_URL=https://novarota-pdv.vercel.app
+EMAIL_SERVER_HOST=smtp.seuprovedor.com.br
+EMAIL_SERVER_PORT=465
+EMAIL_SERVER_USER=usuario@seudominio.com.br
+EMAIL_SERVER_PASSWORD=senha-do-email
+EMAIL_FROM=Cardápio NovaRota <nao-responda@seudominio.com.br>
+```
+`APP_URL` é o endereço do frontend usado no link do email. Sem essas variáveis o sistema funciona normalmente, mas o email de redefinição de senha não é enviado.
+
 ## ✅ Pronto!
 
 Acesse a URL da Vercel no navegador. Você deve ver a tela de login.
