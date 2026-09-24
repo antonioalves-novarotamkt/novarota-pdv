@@ -1,0 +1,161 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Usuário/Admin do sistema
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  clients Client[]
+
+  @@map("users")
+}
+
+// Cliente/Loja (multi-tenant)
+model Client {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  email     String
+  phone     String?
+  logo      String?  // URL da logo
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  products       Product[]
+  categories     Category[]
+  salesChannels  SalesChannel[]
+  images         ProductImage[]
+
+  @@unique([userId, slug])
+  @@map("clients")
+}
+
+// Categoria de Produtos
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  icon      String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  products Product[]
+
+  @@unique([clientId, name])
+  @@map("categories")
+}
+
+// Produto do Cardápio
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  sku         String?  @unique
+  basePrice   Float    // Preço base (custo/loja)
+  markup      Float    @default(30) // Margem em porcentagem
+  finalPrice  Float    // Preço final calculado (basePrice * (1 + markup/100))
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  clientId   String
+  client     Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  images         ProductImage[]
+  channelPrices  ChannelPrice[]
+
+  @@unique([clientId, sku])
+  @@index([clientId])
+  @@index([categoryId])
+  @@map("products")
+}
+
+// Imagem do Produto
+model ProductImage {
+  id        String   @id @default(cuid())
+  url       String   // URL ou caminho do arquivo
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([clientId])
+  @@map("product_images")
+}
+
+// Canal de Venda (loja, iFood, Uber, etc)
+model SalesChannel {
+  id    String @id @default(cuid())
+  name  String
+  icon  String?
+  order Int    @default(0)
+
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  prices ProductChannelPrice[]
+
+  @@unique([clientId, name])
+  @@map("sales_channels")
+}
+
+// Preço por Canal de Venda
+model ChannelPrice {
+  id              String   @id @default(cuid())
+  price           Float    // Preço específico do canal
+  extraMarkup     Float    @default(0) // Markup extra além do padrão
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  channelName String // Relaciona com SalesChannel.name para simplicidade
+
+  @@unique([productId, channelName])
+  @@index([productId])
+  @@map("channel_prices")
+}
+
+// Backup: Preço por Canal com relacionamento (alternativa)
+model ProductChannelPrice {
+  id        String   @id @default(cuid())
+  price     Float
+  extra     Float    @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  channelId String
+  channel   SalesChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@index([channelId])
+  @@map("product_channel_prices")
+}
