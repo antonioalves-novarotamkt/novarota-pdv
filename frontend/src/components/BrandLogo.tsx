@@ -1,18 +1,10 @@
-export function BrandLogo({ size = 40, className = '' }: { size?: number; className?: string }) {
+export function BrandLogo({ height = 40, className = '' }: { height?: number; className?: string }) {
   return (
-    <div className={`leading-none ${className}`}>
-      <span
-        style={{ fontSize: size * 0.5 }}
-        className="font-black italic text-orange-500 tracking-tight block"
-      >
-        novarota
-      </span>
-      <div
-        style={{ fontSize: Math.max(size * 0.13, 9) }}
-        className="tracking-[0.2em] uppercase mt-1 text-slate-500"
-      >
-        cardápio.
-      </div>
-    </div>
+    <img
+      src="/logo.png"
+      alt="NovaRota Marketing"
+      style={{ height }}
+      className={`w-auto max-w-full object-contain ${className}`}
+    />
   );
 }

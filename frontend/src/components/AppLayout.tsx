@@ -44,7 +44,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         }`}
       >
         <div className="flex items-center justify-between px-4 py-6 bg-white">
-          <BrandLogo size={76} />
+          <BrandLogo height={44} />
           <button
             onClick={() => setOpen(false)}
             className="text-slate-400 hover:text-slate-700 lg:hidden"
@@ -100,7 +100,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <button onClick={() => setOpen(true)} className="text-slate-600" title="Abrir menu">
             <Menu className="h-5 w-5" />
           </button>
-          <BrandLogo size={56} />
+          <BrandLogo height={28} />
         </header>
         <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">{children}</main>
       </div>

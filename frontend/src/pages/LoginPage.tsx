@@ -47,7 +47,7 @@ export function LoginPage() {
     <div className="min-h-screen bg-sidebar flex items-center justify-center p-4">
       <div className="w-full max-w-sm rounded-xl bg-white p-8 shadow-xl">
         <div className="mb-6 flex flex-col items-center gap-2">
-          <BrandLogo size={96} className="text-center" />
+          <BrandLogo height={64} />
           <p className="text-xs text-slate-500">
             {isRegister ? 'Crie sua conta para gerenciar cardápios' : 'Entre para gerenciar seus cardápios'}
           </p>
