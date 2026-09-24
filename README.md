@@ -1,100 +1,161 @@
-# NovaRota PDV
+# Menu Manager 🍽️
 
-PDV desktop (Electron + React + TypeScript) para uso local em restaurantes/bares, inspirado no fluxo do
-Consumer/MenuDino: cardapio, comandas por mesa, caixa, controle de estoque basico e emissao de cupom
-**nao fiscal** (comprovante) e **fiscal (NFC-e)**.
+Sistema web de gerenciamento de cardápios com precificação automática, suporte a múltiplos clientes (multi-tenant), importação/exportação Excel e gerenciamento de imagens.
 
-Roda 100% local: banco de dados SQLite embutido, sem depender de internet para o dia a dia (a emissao de
-NFC-e precisa de internet apenas no momento da venda, para falar com a SEFAZ via Focus NFe).
+## Funcionalidades
+
+✅ **Gestão Multi-Tenant** - Cada cliente tem seu próprio workspace  
+✅ **Cardápio** - Produtos com descrição, fotos e categorias  
+✅ **Precificação Inteligente** - Cálculo automático com margem configurável  
+✅ **Canais de Venda** - Precificação diferenciada por canal (loja, iFood, Uber, etc)  
+✅ **Importar/Exportar Excel** - XLSX com suporte a imagens em lote  
+✅ **Gestão de Imagens** - Upload e sincronização de fotos  
+✅ **API REST** - Consumida por apps terceiros (PDV, site, etc)  
+✅ **Autenticação** - JWT com suporte a workspaces  
 
 ## Stack
 
-- Electron 33 + React 18 + TypeScript
-- `electron-vite` para build de main/preload/renderer
-- SQLite local via `better-sqlite3` (arquivo fica em `userData`, ex:
-  `%APPDATA%/novarota-pdv` no Windows)
-- Impressao termica ESC/POS via `escpos` (USB ou rede/IP)
-- Emissao de NFC-e via API da [Focus NFe](https://focusnfe.com.br)
+### Backend
+- Node.js 20+
+- Express.js
+- TypeScript
+- Prisma ORM
+- PostgreSQL / SQLite
+- JWT Authentication
+- Multer (upload de arquivos)
+- ExcelJS (import/export)
 
-## Rodando em desenvolvimento
+### Frontend
+- React 18
+- Vite
+- TypeScript
+- Tailwind CSS
+- React Query
+- React Hook Form
+- Zustand (state management)
 
-Requisitos: Node.js 20+ e um par de build tools nativas para compilar o `better-sqlite3` (no Windows,
-`npm install` cuida disso automaticamente via prebuilds na maioria dos casos).
+### Shared
+- TypeScript types compartilhadas entre backend e frontend
+
+## Desenvolvimento
+
+### Instalação
 
 ```bash
 npm install
+```
+
+### Rodando localmente
+
+```bash
 npm run dev
 ```
 
-Isso abre a janela do Electron com hot reload no renderer.
+Abre:
+- Frontend: `http://localhost:5173`
+- Backend: `http://localhost:3000`
 
-## Build / instalador
+### Variáveis de Ambiente
+
+Crie `.env` no diretório `backend/`:
+
+```env
+DATABASE_URL="file:./dev.db"
+JWT_SECRET="sua-chave-secreta-aqui"
+NODE_ENV="development"
+PORT=3000
+```
+
+### Banco de Dados
 
 ```bash
-npm run build       # compila main/preload/renderer
-npm run dist:win     # gera instalador .exe (NSIS) para Windows
-npm run dist:linux   # gera AppImage
+# Criar/migrar schema
+npm run db:migrate
+
+# Ver dados (Prisma Studio)
+npm run db:studio
 ```
 
-Os artefatos ficam em `release/`.
-
-> Falta adicionar um icone proprio em `build/icon.png` (256x256 ou maior) antes de gerar a build final para
-> o cliente — sem isso o electron-builder usa um icone generico do Electron.
-
-## Estrutura
+## Estrutura de Pastas
 
 ```
-src/
-  main/           processo principal do Electron
-    db/           camada SQLite (schema + repositorios por dominio)
-    ipc/          handlers de IPC (um arquivo por dominio) + orquestrador de venda
-    printing/      impressao ESC/POS (cupom nao fiscal e resumo da NFC-e)
-    fiscal/        cliente Focus NFe + montagem do payload da NFC-e
-  preload/        bridge segura (contextBridge) entre renderer e main
-  renderer/       app React (Caixa, Comandas, Produtos, Estoque, Vendas, Configuracoes)
-  shared/         tipos TypeScript compartilhados entre main e renderer
+├── backend/
+│   ├── src/
+│   │   ├── main.ts           # Entrada
+│   │   ├── app.ts            # Configuração Express
+│   │   ├── routes/           # Rotas da API
+│   │   ├── controllers/      # Controladores
+│   │   ├── services/         # Lógica de negócio
+│   │   ├── middleware/       # Autenticação, validação
+│   │   ├── db/               # Prisma + seeders
+│   │   └── utils/            # Helpers, Excel, validação
+│   └── package.json
+├── frontend/
+│   ├── src/
+│   │   ├── main.tsx          # Entrada React
+│   │   ├── App.tsx
+│   │   ├── pages/            # Telas
+│   │   ├── components/       # Componentes
+│   │   ├── hooks/            # Custom hooks
+│   │   ├── store/            # Zustand stores
+│   │   ├── services/         # API client
+│   │   └── types/            # Tipos TS
+│   └── package.json
+├── shared/
+│   ├── types.ts              # Tipos compartilhados
+│   └── package.json
+└── README.md
 ```
 
-## Fluxo de uma venda
+## API Endpoints (Preview)
 
-1. Produtos sao adicionados ao carrinho (tela Caixa) ou a uma comanda aberta (tela Comandas/Mesas).
-2. Ao "Cobrar", o operador escolhe forma(s) de pagamento e o tipo de documento: **cupom nao fiscal** ou
-   **NFC-e**.
-3. O processo principal grava a venda no SQLite, da baixa no estoque dos produtos que controlam estoque,
-   e (se NFC-e) envia a emissao para a Focus NFe e aguarda a autorizacao da SEFAZ.
-4. Se configurado, imprime o comprovante na impressora termica.
+### Auth
+- `POST /api/auth/register` - Cadastro
+- `POST /api/auth/login` - Login
+- `POST /api/auth/refresh` - Refresh token
 
-## Configuracao antes de usar com cliente real
+### Clientes (Multi-tenant)
+- `GET /api/clients` - Listar meus clientes
+- `POST /api/clients` - Criar cliente
+- `GET /api/clients/:id` - Detalhes
+- `PATCH /api/clients/:id` - Atualizar
+- `DELETE /api/clients/:id` - Deletar
 
-Va em **Configuracoes** no app e preencha:
+### Produtos
+- `GET /api/clients/:clientId/products` - Listar
+- `POST /api/clients/:clientId/products` - Criar
+- `PATCH /api/clients/:clientId/products/:id` - Atualizar
+- `DELETE /api/clients/:clientId/products/:id` - Deletar
 
-1. **Dados da loja** — nome, CNPJ, endereco (aparecem no cupom impresso).
-2. **Impressora termica** — USB ou rede (IP:porta, padrao 9100 para a maioria das termicas ESC/POS).
-3. **Fiscal (NFC-e)**:
-   - Crie uma conta gratuita em https://focusnfe.com.br/cadastro/ e pegue o **token de homologacao** para
-     testar sem valor fiscal.
-   - So troque `ambiente` para `producao` (e use o token de producao) quando o cliente ja tiver cadastrado
-     a empresa e o **certificado digital A1** no painel da Focus NFe, e o plano pago estiver ativo.
-   - Preencha CNPJ, UF (SP), CSC e CSC ID — esses ultimos dois sao fornecidos pela SEFAZ-SP e cadastrados
-     tambem no painel da Focus NFe.
-4. **Mesas** — cadastre as mesas do salao para aparecerem na tela de Comandas.
+### Importar/Exportar
+- `POST /api/clients/:clientId/import/excel` - Importar Excel
+- `GET /api/clients/:clientId/export/excel` - Exportar Excel
 
-## Pontos de atencao fiscal (ler antes de ir para producao)
+### Imagens
+- `POST /api/clients/:clientId/images` - Upload
+- `GET /api/clients/:clientId/images/:id` - Download
 
-- Os campos `CFOP`, `NCM`, `CSOSN`/`CST` usados na emissao (`src/main/fiscal/nfce.ts`) tem valores padrao
-  genericos (CFOP `5102`, NCM `21069090`, CSOSN `102` como Simples Nacional sem credito). **Esses valores
-  dependem do regime tributario do cliente e devem ser revisados com o contador dele** antes de emitir
-  notas reais. Cada produto pode ter seu proprio NCM/CFOP na tela de Produtos.
-- Sempre valide o fluxo completo em ambiente de **homologacao** primeiro (notas de teste, sem validade
-  fiscal) antes de trocar para producao.
-- O resumo impresso da NFC-e hoje mostra a chave de acesso em texto — a impressao do QR Code escaneavel
-  (exigido no DANFE NFC-e oficial) ainda nao esta implementada e e um proximo passo recomendado
-  (`src/main/printing/index.ts`).
+## Próximos Passos
 
-## Roadmap sugerido (nao implementado ainda)
+1. Configurar banco de dados (Prisma + SQLite/PostgreSQL)
+2. Implementar autenticação JWT
+3. CRUD de clientes e produtos
+4. Cálculo de preços com margem
+5. Upload de imagens
+6. Importação/exportação Excel
+7. API de canais de venda
+8. Frontend React com autenticação
 
-- QR Code no cupom fiscal impresso
-- Cancelamento de NFC-e pela UI (o cliente `FocusNfeClient.cancelarNfce` ja existe, falta a tela)
-- Fechamento de caixa (abertura/fechamento com sangria e suprimento)
-- Relatorios de vendas por periodo/forma de pagamento
-- Backup automatico do banco SQLite
+## Deploy
+
+### Vercel (recomendado)
+- Backend (serverless)
+- Frontend (edge)
+
+### Self-hosted
+- Docker + Docker Compose
+- Railway, Render, ou outro VPS
+
+---
+
+Criado com ❤️ para gerenciar cardápios com inteligência.
