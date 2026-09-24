@@ -54,7 +54,9 @@ jobs:
         run: npm ci
 
       - name: Check Prisma schema
-        run: npx prisma validate
+        run: npx prisma validate --schema=backend/prisma/schema.prisma
+        env:
+          DATABASE_URL: "file:./dev.db"
 
   security:
     runs-on: ubuntu-latest
