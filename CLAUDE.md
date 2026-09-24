@@ -158,15 +158,20 @@ Backend: http://localhost:3000
 - [x] Zustand store para autenticação
 - [x] Prisma schema com relacionamentos
 - [x] Seeder com dados demo
+- [x] Importação/exportação Excel (`backend/src/services/excel.service.ts`)
+  - `GET /api/clients/:clientId/export/excel` (`?template=1` baixa o modelo com a aba de instruções)
+  - `POST /api/clients/:clientId/import/excel` (multipart, campo `file`, até 5 MB, .xlsx)
+  - Tudo ou nada: se uma linha tiver erro, nada é gravado e a resposta traz `details: [{row, message}]`
+  - Correspondência: pelo Código (SKU) quando preenchido, senão pelo nome. Célula vazia de SKU não apaga o código existente
+  - O SKU é único por cliente (`@@unique([clientId, sku])`), não no sistema inteiro
 
 ## 📋 Próximos Passos
 
 1. **Upload de imagens** com Multer
-2. **Importação/Exportação Excel** com ExcelJS
-3. **Canais de venda** - precificação diferenciada por canal
-4. **Categorias** - CRUD e organização de produtos
-5. **Dashboard** com estatísticas
-6. **Relatórios** de vendas
+2. **Canais de venda** - precificação diferenciada por canal
+3. **Categorias** - CRUD e organização de produtos
+4. **Dashboard** com estatísticas
+5. **Relatórios** de vendas
 
 ## 📝 Convenções de Código
 
