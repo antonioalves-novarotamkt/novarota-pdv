@@ -15,11 +15,6 @@ interface Product {
   images: any[];
 }
 
-interface Category {
-  id: string;
-  name: string;
-}
-
 export function ClientPage() {
   const { clientId } = useParams<{ clientId: string }>();
   const [client, setClient] = useState<any>(null);
