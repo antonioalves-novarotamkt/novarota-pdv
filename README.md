@@ -1,6 +1,15 @@
 # Menu Manager 🍽️
 
-Sistema web de gerenciamento de cardápios com precificação automática, suporte a múltiplos clientes (multi-tenant), importação/exportação Excel e gerenciamento de imagens.
+[![CI - Build & Test](https://github.com/antonioalves-novarotamkt/novarota-pdv/actions/workflows/ci.yml/badge.svg)](https://github.com/antonioalves-novarotamkt/novarota-pdv/actions/workflows/ci.yml)
+[![Deploy Preview](https://github.com/antonioalves-novarotamkt/novarota-pdv/actions/workflows/deploy-preview.yml/badge.svg)](https://github.com/antonioalves-novarotamkt/novarota-pdv/actions/workflows/deploy-preview.yml)
+
+Sistema web completo de gerenciamento de cardápios com:
+- ✅ Precificação automática com cálculo de margem
+- ✅ Multi-tenant (múltiplos clientes por usuário)
+- ✅ Autenticação JWT segura
+- ✅ API REST com Prisma
+- ✅ Frontend React moderno
+- ✅ CI/CD com GitHub Actions
 
 ## Funcionalidades
 

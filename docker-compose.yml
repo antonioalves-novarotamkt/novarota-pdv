@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: "file:./dev.db"
+      JWT_SECRET: "sua-chave-secreta-super-segura-aqui-min-32-caracteres"
+      NODE_ENV: "production"
+      CORS_ORIGIN: "http://localhost:5173,http://localhost"
+    volumes:
+      - ./backend/dev.db:/app/backend/dev.db
+    networks:
+      - menu-network
+
+  frontend:
+    image: node:20-alpine
+    working_dir: /app/frontend
+    command: npm run build && npm install -g serve && serve -s dist -l 3001
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./frontend:/app/frontend
+      - /app/frontend/node_modules
+    environment:
+      VITE_API_URL: "http://localhost:3000/api"
+    depends_on:
+      - backend
+    networks:
+      - menu-network
+
+networks:
+  menu-network:
+    driver: bridge
+
+volumes:
+  db:
