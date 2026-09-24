@@ -1,23 +1,29 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Plus, Store, ChevronRight } from 'lucide-react';
 import { apiClient } from '../services/api';
 import { useAuthStore } from '../store/auth';
+import { AppLayout } from '../components/AppLayout';
 
 interface Client {
   id: string;
   name: string;
   slug: string;
   email: string;
-  products?: any[];
+  _count?: { products: number };
 }
+
+const inputClass =
+  'rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent';
 
 export function DashboardPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNewClient, setShowNewClient] = useState(false);
   const [formData, setFormData] = useState({ name: '', slug: '', email: '' });
+  const [error, setError] = useState('');
   const navigate = useNavigate();
-  const { user, logout, setClientId } = useAuthStore();
+  const { setClientId } = useAuthStore();
 
   useEffect(() => {
     loadClients();
@@ -25,10 +31,9 @@ export function DashboardPage() {
 
   const loadClients = async () => {
     try {
-      const data = await apiClient.getClients();
-      setClients(data);
-    } catch (error) {
-      console.error('Error loading clients:', error);
+      setClients(await apiClient.getClients());
+    } catch (err) {
+      console.error('Error loading clients:', err);
     } finally {
       setLoading(false);
     }
@@ -36,17 +41,14 @@ export function DashboardPage() {
 
   const handleCreateClient = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     try {
-      const newClient = await apiClient.createClient(
-        formData.name,
-        formData.slug,
-        formData.email
-      );
-      setClients([...clients, newClient]);
+      const newClient = await apiClient.createClient(formData.name, formData.slug, formData.email);
+      setClients([{ ...newClient, _count: { products: 0 } }, ...clients]);
       setFormData({ name: '', slug: '', email: '' });
       setShowNewClient(false);
-    } catch (error) {
-      console.error('Error creating client:', error);
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Não foi possível criar o cliente.');
     }
   };
 
@@ -56,114 +58,107 @@ export function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-green-600">🍽️ Menu Manager</h1>
-          <div className="flex items-center gap-4">
-            <span className="text-gray-600">{user?.name}</span>
-            <button
-              onClick={() => {
-                apiClient.clearToken();
-                logout();
-                navigate('/login');
-              }}
-              className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
-            >
-              Sair
-            </button>
-          </div>
+    <AppLayout>
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Clientes</h1>
+          <p className="text-sm text-slate-500">Cada cliente tem seu próprio cardápio</p>
         </div>
-      </nav>
+        <button
+          onClick={() => setShowNewClient(!showNewClient)}
+          className="flex items-center gap-2 rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700"
+        >
+          <Plus className="h-4 w-4" />
+          Novo cliente
+        </button>
+      </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-3xl font-bold">Meus Clientes</h2>
-          <button
-            onClick={() => setShowNewClient(!showNewClient)}
-            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
-          >
-            + Novo Cliente
-          </button>
-        </div>
-
-        {showNewClient && (
-          <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-            <h3 className="text-xl font-bold mb-4">Novo Cliente</h3>
-            <form onSubmit={handleCreateClient} className="space-y-4">
-              <div className="grid md:grid-cols-3 gap-4">
-                <input
-                  type="text"
-                  placeholder="Nome da loja"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  className="px-4 py-2 border border-gray-300 rounded-lg"
-                  required
-                />
-                <input
-                  type="text"
-                  placeholder="Slug (ex: pizzaria-italiana)"
-                  value={formData.slug}
-                  onChange={(e) =>
-                    setFormData({ ...formData, slug: e.target.value })
-                  }
-                  className="px-4 py-2 border border-gray-300 rounded-lg"
-                  required
-                />
-                <input
-                  type="email"
-                  placeholder="Email"
-                  value={formData.email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
-                  }
-                  className="px-4 py-2 border border-gray-300 rounded-lg"
-                  required
-                />
-              </div>
+      {showNewClient && (
+        <div className="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="mb-4 font-semibold">Novo cliente</h2>
+          <form onSubmit={handleCreateClient} className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-3">
+              <input
+                type="text"
+                placeholder="Nome da loja"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className={inputClass}
+                required
+              />
+              <input
+                type="text"
+                placeholder="Identificador (ex: pizzaria-italiana)"
+                value={formData.slug}
+                onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                className={inputClass}
+                required
+              />
+              <input
+                type="email"
+                placeholder="Email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className={inputClass}
+                required
+              />
+            </div>
+            {error && <p className="text-xs text-red-500">{error}</p>}
+            <div className="flex gap-2">
               <button
                 type="submit"
-                className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700"
+                className="rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700"
               >
                 Criar
               </button>
-            </form>
-          </div>
-        )}
-
-        {loading ? (
-          <p className="text-center text-gray-600">Carregando...</p>
-        ) : clients.length === 0 ? (
-          <div className="bg-white rounded-lg shadow p-8 text-center">
-            <p className="text-gray-600 mb-4">Nenhum cliente criado ainda</p>
-            <button
-              onClick={() => setShowNewClient(true)}
-              className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700"
-            >
-              Criar seu primeiro cliente
-            </button>
-          </div>
-        ) : (
-          <div className="grid md:grid-cols-3 gap-6">
-            {clients.map((client) => (
-              <div
-                key={client.id}
-                className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition cursor-pointer"
-                onClick={() => handleSelectClient(client.id)}
+              <button
+                type="button"
+                onClick={() => setShowNewClient(false)}
+                className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
               >
-                <h3 className="text-xl font-bold mb-2">{client.name}</h3>
-                <p className="text-gray-600 text-sm mb-1">Slug: {client.slug}</p>
-                <p className="text-gray-600 text-sm mb-4">{client.email}</p>
-                <p className="text-sm font-semibold text-green-600">
-                  {client.products?.length || 0} produtos
-                </p>
+                Cancelar
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {loading ? (
+        <p className="text-center text-slate-500">Carregando...</p>
+      ) : clients.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center">
+          <Store className="mx-auto mb-3 h-10 w-10 text-slate-300" />
+          <p className="mb-4 text-slate-500">Nenhum cliente cadastrado ainda</p>
+          <button
+            onClick={() => setShowNewClient(true)}
+            className="rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700"
+          >
+            Cadastrar primeiro cliente
+          </button>
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {clients.map((client) => (
+            <button
+              key={client.id}
+              onClick={() => handleSelectClient(client.id)}
+              className="group rounded-xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-orange-300 hover:shadow-md"
+            >
+              <div className="mb-3 flex items-start justify-between">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
+                  <Store className="h-5 w-5" />
+                </div>
+                <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-orange-500" />
               </div>
-            ))}
-          </div>
-        )}
-      </main>
-    </div>
+              <h3 className="font-semibold">{client.name}</h3>
+              <p className="text-xs text-slate-500">{client.email}</p>
+              <p className="mt-3 text-sm font-medium text-orange-600">
+                {client._count?.products ?? 0} produto{client._count?.products === 1 ? '' : 's'}
+              </p>
+            </button>
+          ))}
+        </div>
+      )}
+    </AppLayout>
   );
 }
