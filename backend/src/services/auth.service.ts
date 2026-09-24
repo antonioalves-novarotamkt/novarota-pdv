@@ -19,7 +19,7 @@ export async function registerUser(input: RegisterInput) {
   });
 
   if (existingUser) {
-    throw new Error('Email already in use');
+    throw new Error('Este email já está cadastrado');
   }
 
   const hashedPassword = await hashPassword(input.password);
@@ -46,12 +46,12 @@ export async function loginUser(input: LoginInput) {
   });
 
   if (!user) {
-    throw new Error('User not found');
+    throw new Error('Email ou senha inválidos');
   }
 
   const passwordMatch = await verifyPassword(input.password, user.password);
   if (!passwordMatch) {
-    throw new Error('Invalid password');
+    throw new Error('Email ou senha inválidos');
   }
 
   const tokens = generateTokens({

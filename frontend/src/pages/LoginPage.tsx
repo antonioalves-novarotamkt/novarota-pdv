@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { apiClient } from '../services/api';
+import { apiClient, API_URL } from '../services/api';
 import { useAuthStore } from '../store/auth';
 
 export function LoginPage() {
@@ -31,7 +31,11 @@ export function LoginPage() {
       setUser(user, accessToken);
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Something went wrong');
+      if (!err.response) {
+        setError(`Não foi possível conectar ao servidor (${API_URL}). Tente novamente em alguns segundos.`);
+      } else {
+        setError(err.response.data?.error || 'Erro inesperado. Tente novamente.');
+      }
     } finally {
       setLoading(false);
     }
@@ -104,13 +108,6 @@ export function LoginPage() {
           >
             {isRegister ? 'Já tem conta? Entrar' : 'Não tem conta? Registrar'}
           </button>
-        </div>
-
-        {/* Demo Credentials */}
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
-          <p className="font-semibold mb-2">Demo:</p>
-          <p>Email: demo@example.com</p>
-          <p>Senha: demo123</p>
         </div>
       </div>
     </div>

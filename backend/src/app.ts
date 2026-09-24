@@ -4,12 +4,19 @@ import authRoutes from './routes/auth.routes.js';
 import clientsRoutes from './routes/clients.routes.js';
 import productsRoutes from './routes/products.routes.js';
 
+const allowedOrigins = ENV.CORS_ORIGIN.split(',')
+  .map((origin) => origin.trim().replace(/\/+$/, ''))
+  .filter(Boolean);
+
 export function createApp() {
   const app = express();
 
-  // CORS Middleware
   app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', ENV.CORS_ORIGIN);
+    const origin = req.headers.origin;
+    if (origin && allowedOrigins.includes(origin)) {
+      res.header('Access-Control-Allow-Origin', origin);
+    }
+    res.header('Vary', 'Origin');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     if (req.method === 'OPTIONS') {

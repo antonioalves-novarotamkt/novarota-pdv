@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 interface ApiError {
   error: string;
@@ -29,7 +29,8 @@ class ApiClient {
     this.client.interceptors.response.use(
       (response) => response,
       (error: AxiosError<ApiError>) => {
-        if (error.response?.status === 401) {
+        const isAuthCall = error.config?.url?.startsWith('/auth/');
+        if (error.response?.status === 401 && !isAuthCall) {
           this.clearToken();
           window.location.href = '/login';
         }
