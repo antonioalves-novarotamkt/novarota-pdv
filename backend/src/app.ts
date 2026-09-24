@@ -1,8 +1,8 @@
 import express, { Express } from 'express';
-import { ENV } from './utils/env';
-import authRoutes from './routes/auth.routes';
-import clientsRoutes from './routes/clients.routes';
-import productsRoutes from './routes/products.routes';
+import { ENV } from './utils/env.js';
+import authRoutes from './routes/auth.routes.js';
+import clientsRoutes from './routes/clients.routes.js';
+import productsRoutes from './routes/products.routes.js';
 
 export function createApp() {
   const app = express();

@@ -1,5 +1,5 @@
-import { prisma } from '../db/prisma';
-import { calculateFinalPrice } from '../utils/pricing';
+import { prisma } from '../db/prisma.js';
+import { calculateFinalPrice } from '../utils/pricing.js';
 
 export interface CreateProductInput {
   name: string;

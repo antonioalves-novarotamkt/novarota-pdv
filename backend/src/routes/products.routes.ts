@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
-import { authMiddleware } from '../middleware/auth';
-import { clientAccessMiddleware } from '../middleware/clientAccess';
-import * as productService from '../services/product.service';
+import { authMiddleware } from '../middleware/auth.js';
+import { clientAccessMiddleware } from '../middleware/clientAccess.js';
+import * as productService from '../services/product.service.js';
 
 const router = Router();
 

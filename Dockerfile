@@ -4,11 +4,15 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 COPY package.json package-lock.json ./
+COPY backend/package.json ./backend/package.json
+COPY frontend/package.json ./frontend/package.json
+COPY shared/package.json ./shared/package.json
+
 RUN npm ci
 
 COPY . .
 
-RUN npm run build
+RUN npm run build -w backend
 
 # Backend runtime
 FROM node:20-alpine
@@ -18,12 +22,12 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 
-COPY package.json package-lock.json ./
+COPY --from=builder /app/package.json /app/package-lock.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/backend/package.json ./backend/package.json
 COPY --from=builder /app/backend/dist ./backend/dist
 COPY --from=builder /app/backend/prisma ./backend/prisma
 
-RUN npm ci --production
-
 EXPOSE 3000
 
-CMD ["node", "backend/dist/main.js"]
+CMD ["npm", "run", "start", "-w", "backend"]

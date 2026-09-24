@@ -29,7 +29,7 @@ Sistema web completo de gerenciamento de cardápios com:
 - Express.js
 - TypeScript
 - Prisma ORM
-- PostgreSQL / SQLite
+- PostgreSQL
 - JWT Authentication
 - Multer (upload de arquivos)
 - ExcelJS (import/export)
@@ -66,20 +66,26 @@ Abre:
 
 ### Variáveis de Ambiente
 
-Crie `.env` no diretório `backend/`:
+Crie `.env` no diretório `backend/` (veja `backend/.env.example`):
 
 ```env
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="postgresql://user:password@localhost:5432/menumanager"
 JWT_SECRET="sua-chave-secreta-aqui"
 NODE_ENV="development"
 PORT=3000
+CORS_ORIGIN="http://localhost:5173"
+```
+
+Precisa de um PostgreSQL rodando localmente. A forma mais simples é via Docker:
+```bash
+docker compose up postgres -d
 ```
 
 ### Banco de Dados
 
 ```bash
-# Criar/migrar schema
-npm run db:migrate
+# Criar/migrar schema + popular com dados demo
+npm run db:setup
 
 # Ver dados (Prisma Studio)
 npm run db:studio
@@ -146,24 +152,18 @@ npm run db:studio
 
 ## Próximos Passos
 
-1. Configurar banco de dados (Prisma + SQLite/PostgreSQL)
-2. Implementar autenticação JWT
-3. CRUD de clientes e produtos
-4. Cálculo de preços com margem
-5. Upload de imagens
-6. Importação/exportação Excel
-7. API de canais de venda
-8. Frontend React com autenticação
+1. Upload de imagens
+2. Importação/exportação Excel
+3. API de canais de venda com precificação diferenciada
+4. Dashboard com estatísticas
 
 ## Deploy
 
-### Vercel (recomendado)
-- Backend (serverless)
-- Frontend (edge)
+Veja o guia passo a passo completo em [DEPLOY.md](./DEPLOY.md).
 
-### Self-hosted
-- Docker + Docker Compose
-- Railway, Render, ou outro VPS
+Resumo:
+- **Backend + PostgreSQL**: Railway (usa o `Dockerfile` da raiz)
+- **Frontend**: Vercel (usa `frontend/vercel.json`)
 
 ---
 

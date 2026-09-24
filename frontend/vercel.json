@@ -1,0 +1,8 @@
+{
+  "buildCommand": "cd .. && npm ci && npm run build -w frontend",
+  "outputDirectory": "dist",
+  "installCommand": "echo skip",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

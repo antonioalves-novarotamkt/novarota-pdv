@@ -3,14 +3,15 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "node --watch --loader tsx src/main.ts",
+    "dev": "node --watch --env-file=.env --import tsx src/main.ts",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "migrate": "prisma migrate dev",
-    "seed": "tsx src/db/seed.ts",
+    "migrate:deploy": "prisma migrate deploy",
+    "seed": "node --env-file=.env --import tsx src/db/seed.ts",
     "setup": "npm run migrate && npm run seed",
     "studio": "prisma studio",
-    "start": "node dist/main.js"
+    "start": "npm run migrate:deploy && node dist/main.js"
   },
   "dependencies": {
     "@prisma/client": "^5.8.0",

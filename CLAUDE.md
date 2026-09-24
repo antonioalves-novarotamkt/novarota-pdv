@@ -14,8 +14,20 @@
 ### Stack
 - **Backend**: Node.js + Express + TypeScript + Prisma
 - **Frontend**: React 18 + Vite + TypeScript + Tailwind CSS
-- **Database**: SQLite (dev) / PostgreSQL (prod)
+- **Database**: PostgreSQL (dev e prod — via `docker compose up postgres` localmente)
 - **Auth**: JWT com suporte a multi-tenant
+- **Deploy**: Railway (backend + Postgres) + Vercel (frontend) — veja `DEPLOY.md`
+
+### Detalhes importantes de runtime
+- O backend usa ESM (`"type": "module"`): todo import relativo no código-fonte
+  precisa terminar em `.js` (mesmo apontando para um arquivo `.ts`), senão o
+  Node não resolve o módulo em produção (`ERR_MODULE_NOT_FOUND`). O `tsc` não
+  adiciona isso sozinho.
+- Os scripts `dev` e `seed` usam `node --env-file=.env --import tsx` (não
+  `--loader tsx`, que está deprecated a partir do Node 20.6/22 e quebra
+  silenciosamente combinado com `--env-file`).
+- `npm run start` (produção) roda `prisma migrate deploy` antes de subir o
+  servidor — não usa `migrate dev` (que é interativo).
 
 ### Estrutura
 ```

@@ -1,6 +1,6 @@
-import { prisma } from '../db/prisma';
-import { hashPassword, verifyPassword } from '../utils/password';
-import { generateTokens } from '../utils/jwt';
+import { prisma } from '../db/prisma.js';
+import { hashPassword, verifyPassword } from '../utils/password.js';
+import { generateTokens } from '../utils/jwt.js';
 
 export interface RegisterInput {
   email: string;
