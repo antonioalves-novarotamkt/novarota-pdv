@@ -1,6 +1,9 @@
 # Build stage
 FROM node:20-alpine AS builder
 
+# Prisma's engines need OpenSSL, which Alpine doesn't ship by default
+RUN apk add --no-cache openssl
+
 WORKDIR /app
 
 COPY package.json package-lock.json ./
@@ -16,6 +19,8 @@ RUN npm run build -w backend
 
 # Backend runtime
 FROM node:20-alpine
+
+RUN apk add --no-cache openssl
 
 WORKDIR /app
 
