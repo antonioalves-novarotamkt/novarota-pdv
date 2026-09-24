@@ -48,7 +48,6 @@ npm run dev
 
 #### 1. Autenticação
 ```
-✓ Register - Criar novo usuário
 ✓ Login - Entrar com credenciais
 ✓ Session Restore - Manter sessão ao recarregar
 ✓ Logout - Limpar tokens e redirecionar para login
@@ -56,8 +55,7 @@ npm run dev
 
 **Como testar:**
 - Ir para http://localhost:5173/login
-- Registrar novo usuário OU
-- Usar credenciais demo (demo@example.com / demo123)
+- Usar as credenciais demo do seed local (demo@example.com / demo123)
 
 #### 2. Clientes
 ```

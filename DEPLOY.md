@@ -68,11 +68,7 @@ O Railway vai reiniciar o serviço automaticamente.
 
 Acesse a URL da Vercel no navegador. Você deve ver a tela de login.
 
-**Credenciais de teste** (se rodou o seed):
-```
-Email: demo@example.com
-Senha: demo123
-```
+Entre com a conta única do sistema (`aasilva72@gmail.com`). Ela é criada automaticamente pelas migrations no primeiro deploy do backend. Não existe cadastro pela tela.
 
 ## 🔄 Deploys futuros
 
@@ -86,7 +82,7 @@ Toda vez que você (ou eu) fizer push na branch conectada, tanto Railway quanto 
 **Erro "Network Error" ao fazer login**
 → Confira se `VITE_API_URL` na Vercel aponta para a URL certa do Railway, terminando em `/api`.
 
-**Erro 500 ao fazer login/registrar**
+**Erro 500 ao fazer login**
 → Verifique se as migrations rodaram. No Railway, veja os **Deploy Logs** — deve aparecer "All migrations have been successfully applied."
 
 **Preciso trocar o JWT_SECRET depois**

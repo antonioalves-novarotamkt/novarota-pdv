@@ -15,14 +15,30 @@ interface AuthStore {
   setUser: (user: User, token: string) => void;
   setClientId: (clientId: string) => void;
   logout: () => void;
-  restoreSession: () => void;
+}
+
+// Read synchronously so protected routes see the saved session on the very first render
+// after a page reload, instead of redirecting to /login before it is restored.
+function loadSession() {
+  try {
+    const user = localStorage.getItem('user');
+    const accessToken = localStorage.getItem('accessToken');
+    if (user && accessToken) {
+      return {
+        user: JSON.parse(user) as User,
+        accessToken,
+        clientId: localStorage.getItem('clientId'),
+        isLoggedIn: true,
+      };
+    }
+  } catch {
+    // Corrupted or unavailable storage: start logged out.
+  }
+  return { user: null, accessToken: null, clientId: null, isLoggedIn: false };
 }
 
 export const useAuthStore = create<AuthStore>((set) => ({
-  user: null,
-  accessToken: null,
-  clientId: null,
-  isLoggedIn: false,
+  ...loadSession(),
 
   setUser: (user, token) => {
     localStorage.setItem('user', JSON.stringify(user));
@@ -40,20 +56,5 @@ export const useAuthStore = create<AuthStore>((set) => ({
     localStorage.removeItem('accessToken');
     localStorage.removeItem('clientId');
     set({ user: null, accessToken: null, clientId: null, isLoggedIn: false });
-  },
-
-  restoreSession: () => {
-    const user = localStorage.getItem('user');
-    const accessToken = localStorage.getItem('accessToken');
-    const clientId = localStorage.getItem('clientId');
-
-    if (user && accessToken) {
-      set({
-        user: JSON.parse(user),
-        accessToken,
-        clientId,
-        isLoggedIn: true,
-      });
-    }
   },
 }));

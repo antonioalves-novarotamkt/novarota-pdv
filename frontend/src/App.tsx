@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/auth';
 import { LoginPage } from './pages/LoginPage';
@@ -11,12 +10,6 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
-  const { restoreSession } = useAuthStore();
-
-  useEffect(() => {
-    restoreSession();
-  }, []);
-
   return (
     <Router>
       <Routes>

@@ -61,7 +61,7 @@ async function main() {
   // Create demo products
   const products = await Promise.all([
     prisma.product.upsert({
-      where: { sku: 'PIZZA001' },
+      where: { clientId_sku: { clientId: demoClient.id, sku: 'PIZZA001' } },
       update: {},
       create: {
         name: 'Pizza Margherita',
@@ -75,7 +75,7 @@ async function main() {
       },
     }),
     prisma.product.upsert({
-      where: { sku: 'PIZZA002' },
+      where: { clientId_sku: { clientId: demoClient.id, sku: 'PIZZA002' } },
       update: {},
       create: {
         name: 'Pizza Pepperoni',
@@ -89,7 +89,7 @@ async function main() {
       },
     }),
     prisma.product.upsert({
-      where: { sku: 'BEB001' },
+      where: { clientId_sku: { clientId: demoClient.id, sku: 'BEB001' } },
       update: {},
       create: {
         name: 'Refrigerante 2L',

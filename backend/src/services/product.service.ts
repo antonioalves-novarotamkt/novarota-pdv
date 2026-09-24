@@ -19,10 +19,10 @@ export async function createProduct(clientId: string, input: CreateProductInput)
 
   if (input.sku) {
     const existing = await prisma.product.findUnique({
-      where: { sku: input.sku },
+      where: { clientId_sku: { clientId, sku: input.sku } },
     });
     if (existing) {
-      throw new Error('SKU already exists');
+      throw new Error('Já existe um produto com este código neste cliente');
     }
   }
 

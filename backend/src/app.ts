@@ -3,6 +3,7 @@ import { ENV } from './utils/env.js';
 import authRoutes from './routes/auth.routes.js';
 import clientsRoutes from './routes/clients.routes.js';
 import productsRoutes from './routes/products.routes.js';
+import excelRoutes from './routes/excel.routes.js';
 
 const allowedOrigins = ENV.CORS_ORIGIN.split(',')
   .map((origin) => origin.trim().replace(/\/+$/, ''))
@@ -19,6 +20,7 @@ export function createApp() {
     res.header('Vary', 'Origin');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.header('Access-Control-Expose-Headers', 'Content-Disposition');
     if (req.method === 'OPTIONS') {
       return res.sendStatus(200);
     }
@@ -37,6 +39,7 @@ export function createApp() {
   app.use('/api/auth', authRoutes);
   app.use('/api/clients', clientsRoutes);
   app.use('/api/clients', productsRoutes);
+  app.use('/api/clients', excelRoutes);
 
   // 404
   app.use((req, res) => {

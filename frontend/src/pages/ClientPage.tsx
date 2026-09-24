@@ -3,10 +3,12 @@ import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, Plus, Pencil, Trash2, UtensilsCrossed } from 'lucide-react';
 import { apiClient } from '../services/api';
 import { AppLayout } from '../components/AppLayout';
+import { ExcelActions } from '../components/ExcelActions';
 
 interface Product {
   id: string;
   name: string;
+  sku?: string | null;
   description?: string;
   basePrice: number;
   markup: number;
@@ -139,6 +141,8 @@ export function ClientPage() {
         </button>
       </div>
 
+      {clientId && <ExcelActions clientId={clientId} onImported={loadProducts} />}
+
       {showForm && (
         <div className="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="mb-4 font-semibold">{editingId ? 'Editar produto' : 'Novo produto'}</h2>
@@ -221,7 +225,19 @@ export function ClientPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {products.map((product) => (
             <div key={product.id} className="flex flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <h3 className="font-semibold">{product.name}</h3>
+              <div className="flex items-start justify-between gap-2">
+                <h3 className="font-semibold">{product.name}</h3>
+                {!product.active && (
+                  <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
+                    Inativo
+                  </span>
+                )}
+              </div>
+              {(product.category || product.sku) && (
+                <p className="mt-0.5 text-xs text-slate-400">
+                  {[product.category?.name, product.sku].filter(Boolean).join(' · ')}
+                </p>
+              )}
               {product.description && (
                 <p className="mt-1 text-sm text-slate-500">{product.description}</p>
               )}

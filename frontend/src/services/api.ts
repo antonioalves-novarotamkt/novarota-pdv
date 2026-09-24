@@ -56,15 +56,6 @@ class ApiClient {
   }
 
   // Auth
-  async register(email: string, password: string, name: string) {
-    const response = await this.client.post('/auth/register', {
-      email,
-      password,
-      name,
-    });
-    return response.data;
-  }
-
   async login(email: string, password: string) {
     const response = await this.client.post('/auth/login', {
       email,
@@ -141,6 +132,58 @@ class ApiClient {
     );
     return response.data;
   }
+
+  async downloadProductsExcel(clientId: string, template = false) {
+    const response = await this.client.get(`/clients/${clientId}/export/excel`, {
+      params: template ? { template: 1 } : undefined,
+      responseType: 'blob',
+    });
+    const disposition: string = response.headers['content-disposition'] ?? '';
+    const filename = /filename="([^"]+)"/.exec(disposition)?.[1] ?? 'cardapio.xlsx';
+
+    const url = URL.createObjectURL(response.data);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async importProductsExcel(clientId: string, file: File): Promise<ImportResult> {
+    const formData = new FormData();
+    formData.append('file', file);
+    // The instance defaults to JSON, which makes axios serialize FormData as JSON and drop the file.
+    const response = await this.client.post(`/clients/${clientId}/import/excel`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data.data;
+  }
+}
+
+export interface ImportResult {
+  created: number;
+  updated: number;
+  categoriesCreated: number;
+}
+
+export interface ImportErrorResponse {
+  error: string;
+  details?: { row: number; message: string }[];
+}
+
+export async function readApiError(err: any): Promise<ImportErrorResponse> {
+  if (!err.response) {
+    return { error: `Não foi possível conectar ao servidor (${API_URL}).` };
+  }
+  let data = err.response.data;
+  if (data instanceof Blob) {
+    try {
+      data = JSON.parse(await data.text());
+    } catch {
+      data = null;
+    }
+  }
+  return { error: data?.error || 'Erro inesperado. Tente novamente.', details: data?.details };
 }
 
 export const apiClient = new ApiClient();

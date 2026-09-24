@@ -125,9 +125,7 @@ npm run db:studio
 ## API Endpoints (Preview)
 
 ### Auth
-- `POST /api/auth/register` - Cadastro
-- `POST /api/auth/login` - Login
-- `POST /api/auth/refresh` - Refresh token
+- `POST /api/auth/login` - Login (conta única; não há cadastro público)
 
 ### Clientes (Multi-tenant)
 - `GET /api/clients` - Listar meus clientes

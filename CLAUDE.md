@@ -144,13 +144,19 @@ cd frontend && npm run dev
 Frontend: http://localhost:5173  
 Backend: http://localhost:3000
 
-### Credenciais Demo
+### Credenciais Demo (só no banco local, criado pelo seed)
 - **Email**: demo@example.com
 - **Senha**: demo123
 
+## 🔑 Acesso (conta única)
+
+- O sistema tem **um único usuário**: `aasilva72@gmail.com`. Não existe cadastro público nem "esqueci minha senha".
+- O usuário é criado pela migration `20260924174500_admin_user` (INSERT ... ON CONFLICT: cria, ou redefine a senha se o email já existir). O arquivo guarda só o hash bcrypt.
+- **Para trocar a senha:** gere uma senha nova, calcule o hash com `bcryptjs.hashSync(senha, 12)` e crie uma **nova** migration com o mesmo `INSERT ... ON CONFLICT`. Nunca edite uma migration já aplicada.
+
 ## ✅ Implementado
 
-- [x] Autenticação JWT (register, login)
+- [x] Autenticação JWT (login; conta única, sem cadastro público)
 - [x] CRUD de clientes (multi-tenant)
 - [x] CRUD de produtos com cálculo automático de preço
 - [x] Frontend: Login, Dashboard, Detalhes do Cliente, Formulário de Produtos
@@ -158,15 +164,20 @@ Backend: http://localhost:3000
 - [x] Zustand store para autenticação
 - [x] Prisma schema com relacionamentos
 - [x] Seeder com dados demo
+- [x] Importação/exportação Excel (`backend/src/services/excel.service.ts`)
+  - `GET /api/clients/:clientId/export/excel` (`?template=1` baixa o modelo com a aba de instruções)
+  - `POST /api/clients/:clientId/import/excel` (multipart, campo `file`, até 5 MB, .xlsx)
+  - Tudo ou nada: se uma linha tiver erro, nada é gravado e a resposta traz `details: [{row, message}]`
+  - Correspondência: pelo Código (SKU) quando preenchido, senão pelo nome. Célula vazia de SKU não apaga o código existente
+  - O SKU é único por cliente (`@@unique([clientId, sku])`), não no sistema inteiro
 
 ## 📋 Próximos Passos
 
 1. **Upload de imagens** com Multer
-2. **Importação/Exportação Excel** com ExcelJS
-3. **Canais de venda** - precificação diferenciada por canal
-4. **Categorias** - CRUD e organização de produtos
-5. **Dashboard** com estatísticas
-6. **Relatórios** de vendas
+2. **Canais de venda** - precificação diferenciada por canal
+3. **Categorias** - CRUD e organização de produtos
+4. **Dashboard** com estatísticas
+5. **Relatórios** de vendas
 
 ## 📝 Convenções de Código
 
