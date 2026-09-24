@@ -3,11 +3,12 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "node --watch src/main.ts",
+    "dev": "node --watch --loader tsx src/main.ts",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "migrate": "prisma migrate dev",
-    "seed": "node --loader tsx src/db/seed.ts",
+    "seed": "tsx src/db/seed.ts",
+    "setup": "npm run migrate && npm run seed",
     "studio": "prisma studio",
     "start": "node dist/main.js"
   },

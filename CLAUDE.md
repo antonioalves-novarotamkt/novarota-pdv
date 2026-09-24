@@ -101,15 +101,60 @@ shared/         # Tipos compartilhados
 - [ ] Relatório de produtos
 - [ ] Sincronização em tempo real
 
-## 🚀 Próximos Passos
+## 🚀 Rodando o Projeto
 
-1. **Configurar Prisma** e criar migrações
-2. **Implementar rotas de auth** (register, login)
-3. **CRUD de clientes** (GET, POST, PATCH, DELETE)
-4. **CRUD de produtos** com cálculo automático
-5. **Upload de imagens** com Multer
-6. **Importação Excel** com ExcelJS
-7. **Frontend**: Telas de login, dashboard, formulários
+### Setup Inicial
+```bash
+# Instalar dependências
+npm install
+
+# Configurar banco de dados e seed
+npm run db:setup
+
+# Ou separadamente:
+npm run db:migrate  # Criar tabelas
+npm run db:seed     # Popular com dados demo
+```
+
+### Desenvolvimento
+```bash
+# Rodar backend e frontend simultaneamente
+npm run dev
+
+# Ou separadamente:
+# Terminal 1 - Backend
+cd backend && npm run dev
+
+# Terminal 2 - Frontend
+cd frontend && npm run dev
+```
+
+Frontend: http://localhost:5173  
+Backend: http://localhost:3000
+
+### Credenciais Demo
+- **Email**: demo@example.com
+- **Senha**: demo123
+
+## ✅ Implementado
+
+- [x] Autenticação JWT (register, login)
+- [x] CRUD de clientes (multi-tenant)
+- [x] CRUD de produtos com cálculo automático de preço
+- [x] Frontend: Login, Dashboard, Detalhes do Cliente, Formulário de Produtos
+- [x] API client TypeScript com Axios
+- [x] Zustand store para autenticação
+- [x] Prisma schema com relacionamentos
+- [x] Seeder com dados demo
+
+## 📋 Próximos Passos
+
+1. **Upload de imagens** com Multer
+2. **Importação/Exportação Excel** com ExcelJS
+3. **Canais de venda** - precificação diferenciada por canal
+4. **Categorias** - CRUD e organização de produtos
+5. **Dashboard** com estatísticas
+6. **Relatórios** de vendas
 
 ## 📝 Convenções de Código
 
