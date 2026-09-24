@@ -170,14 +170,25 @@ Backend: http://localhost:3000
   - Tudo ou nada: se uma linha tiver erro, nada é gravado e a resposta traz `details: [{row, message}]`
   - Correspondência: pelo Código (SKU) quando preenchido, senão pelo nome. Célula vazia de SKU não apaga o código existente
   - O SKU é único por cliente (`@@unique([clientId, sku])`), não no sistema inteiro
+  - Acréscimo vazio: produto existente mantém o seu; produto novo usa o `defaultMarkup` do cliente
+- [x] Importar do Google Planilhas (`backend/src/services/google-sheets.service.ts`)
+  - `POST /api/clients/:clientId/import/google-sheets` com `{ url }`; converte o link para o export `.xlsx` e reusa `importProducts`
+  - Só aceita `https://docs.google.com/spreadsheets/...` e remonta a URL a partir do id (evita SSRF). A planilha precisa estar compartilhada "Qualquer pessoa com o link". Só a primeira aba é importada.
+- [x] Acréscimo geral por cliente (`Client.defaultMarkup`)
+  - `PATCH /api/clients/:clientId/markup` com `{ markup }`: grava o padrão e recalcula `markup`/`finalPrice` de todos os produtos em um único UPDATE
+  - Produto criado sem acréscimo usa o padrão do cliente. `0` é um acréscimo válido (não tratar como "vazio")
+- [x] Foto do produto (uma por produto)
+  - `PUT /api/clients/:clientId/products/:productId/image` (multipart `image`, JPG/PNG/WebP, até 3 MB) substitui a foto; `DELETE` remove
+  - O arquivo fica no Postgres (`ProductImage.data`), porque o disco do Render é apagado a cada deploy. **Nunca** selecione `data` em listagens (use o `productInclude` de `product.service.ts`)
+  - `GET /api/images/:id` é público (tags `<img>` não mandam o token); ids são UUID aleatórios e mudam a cada troca, com cache `immutable`
+  - O frontend reduz a foto antes de enviar (`frontend/src/utils/resizeImage.ts`: até 1200px, JPEG)
 
 ## 📋 Próximos Passos
 
-1. **Upload de imagens** com Multer
-2. **Canais de venda** - precificação diferenciada por canal
-3. **Categorias** - CRUD e organização de produtos
-4. **Dashboard** com estatísticas
-5. **Relatórios** de vendas
+1. **Canais de venda** - precificação diferenciada por canal
+2. **Categorias** - CRUD e organização de produtos
+3. **Dashboard** com estatísticas
+4. **Relatórios** de vendas
 
 ## 📝 Convenções de Código
 

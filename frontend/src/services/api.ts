@@ -158,6 +158,35 @@ class ApiClient {
     });
     return response.data.data;
   }
+
+  async importProductsGoogleSheet(clientId: string, url: string): Promise<ImportResult> {
+    const response = await this.client.post(`/clients/${clientId}/import/google-sheets`, { url });
+    return response.data.data;
+  }
+
+  async applyMarkupToAll(clientId: string, markup: number): Promise<{ markup: number; updated: number }> {
+    const response = await this.client.patch(`/clients/${clientId}/markup`, { markup });
+    return response.data.data;
+  }
+
+  async uploadProductImage(clientId: string, productId: string, image: Blob) {
+    const formData = new FormData();
+    formData.append('image', image, 'foto.jpg');
+    const response = await this.client.put(`/clients/${clientId}/products/${productId}/image`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data.data;
+  }
+
+  async removeProductImage(clientId: string, productId: string) {
+    const response = await this.client.delete(`/clients/${clientId}/products/${productId}/image`);
+    return response.data.data;
+  }
+}
+
+// Image paths from the API look like "/api/images/<id>"; they live on the backend's origin.
+export function imageSrc(path: string) {
+  return new URL(path, new URL(API_URL).origin).toString();
 }
 
 export interface ImportResult {

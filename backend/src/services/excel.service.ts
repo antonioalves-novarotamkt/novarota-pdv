@@ -3,7 +3,6 @@ import { prisma } from '../db/prisma.js';
 import { calculateFinalPrice } from '../utils/pricing.js';
 
 const MAX_ROWS = 2000;
-const DEFAULT_MARKUP = 30;
 const ORANGE = 'FFEA580C';
 const CURRENCY_FMT = '"R$" #,##0.00';
 
@@ -161,8 +160,9 @@ function parseSheet(sheet: ExcelJS.Worksheet) {
 
     if (has('markup')) {
       const markup = parseNumber(cell('markup'), true);
-      if (markup === null) parsed.markup = DEFAULT_MARKUP;
-      else if (Number.isNaN(markup) || markup < 0) rowErrors.push('o acréscimo não é uma porcentagem válida');
+      if (markup === null) {
+        // Empty cell: keep the existing product's markup, or use the client's default for new ones.
+      } else if (Number.isNaN(markup) || markup < 0) rowErrors.push('o acréscimo não é uma porcentagem válida');
       else parsed.markup = round2(markup);
     }
 
@@ -228,6 +228,7 @@ export async function importProducts(clientId: string, fileBuffer: Buffer) {
 
   return prisma.$transaction(
     async (tx) => {
+      const { defaultMarkup } = await tx.client.findUniqueOrThrow({ where: { id: clientId } });
       const existing = await tx.product.findMany({
         where: { clientId },
         select: { id: true, name: true, sku: true, basePrice: true, markup: true },
@@ -264,7 +265,7 @@ export async function importProducts(clientId: string, fileBuffer: Buffer) {
         }
 
         const basePrice = row.basePrice!;
-        const markup = row.markup ?? match?.markup ?? DEFAULT_MARKUP;
+        const markup = row.markup ?? match?.markup ?? defaultMarkup;
         const data = {
           name: row.name!,
           basePrice,
@@ -320,8 +321,8 @@ export async function exportProducts(clientId: string, template: boolean) {
       category: 'Pizzas',
       sku: 'PZ001',
       basePrice: 40,
-      markup: 30,
-      finalPrice: calculateFinalPrice(40, 30),
+      markup: client.defaultMarkup,
+      finalPrice: calculateFinalPrice(40, client.defaultMarkup),
       active: 'Sim',
     });
     addInstructions(workbook);
@@ -358,7 +359,7 @@ function addInstructions(workbook: ExcelJS.Workbook) {
     '',
     '• Preencha um produto por linha na aba "Cardápio". Apague a linha de exemplo antes de importar.',
     '• Obrigatórios: Nome e Preço na loja.',
-    '• Acréscimo (%): porcentagem somada ao preço da loja. Se ficar vazio, usa 30%.',
+    '• Acréscimo (%): porcentagem somada ao preço da loja. Se ficar vazio, usa o acréscimo geral do cliente (produto novo) ou mantém o atual (produto existente).',
     '• Preço final: calculado automaticamente pelo sistema; não precisa preencher.',
     '• Categoria: se não existir, é criada automaticamente.',
     '• Ativo: "Sim" ou "Não". Se ficar vazio, o produto fica ativo.',
