@@ -17,24 +17,9 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  clients     Client[]
-  resetTokens PasswordResetToken[]
+  clients Client[]
 
   @@map("users")
-}
-
-// Link de "esqueci minha senha". Guarda só o hash SHA-256 do token enviado por email.
-model PasswordResetToken {
-  id        String   @id @default(cuid())
-  tokenHash String   @unique
-  userId    String
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@map("password_reset_tokens")
 }
 
 // Cliente/Loja (multi-tenant)

@@ -64,27 +64,11 @@ CORS_ORIGIN=https://novarota-pdv.vercel.app
 ```
 O Railway vai reiniciar o serviço automaticamente.
 
-### Passo 5: Email para "Esqueci minha senha"
-No serviço do backend, adicione as variáveis de SMTP. Os nomes são os mesmos do NovaRotaAdm, então dá para copiar os valores de lá:
-```
-APP_URL=https://novarota-pdv.vercel.app
-EMAIL_SERVER_HOST=smtp.seuprovedor.com.br
-EMAIL_SERVER_PORT=465
-EMAIL_SERVER_USER=usuario@seudominio.com.br
-EMAIL_SERVER_PASSWORD=senha-do-email
-EMAIL_FROM=Cardápio NovaRota <nao-responda@seudominio.com.br>
-```
-`APP_URL` é o endereço do frontend usado no link do email. Sem essas variáveis o sistema funciona normalmente, mas o email de redefinição de senha não é enviado.
-
 ## ✅ Pronto!
 
 Acesse a URL da Vercel no navegador. Você deve ver a tela de login.
 
-**Credenciais de teste** (se rodou o seed):
-```
-Email: demo@example.com
-Senha: demo123
-```
+Entre com a conta única do sistema (`aasilva72@gmail.com`). Ela é criada automaticamente pelas migrations no primeiro deploy do backend. Não existe cadastro pela tela.
 
 ## 🔄 Deploys futuros
 
@@ -98,7 +82,7 @@ Toda vez que você (ou eu) fizer push na branch conectada, tanto Railway quanto 
 **Erro "Network Error" ao fazer login**
 → Confira se `VITE_API_URL` na Vercel aponta para a URL certa do Railway, terminando em `/api`.
 
-**Erro 500 ao fazer login/registrar**
+**Erro 500 ao fazer login**
 → Verifique se as migrations rodaram. No Railway, veja os **Deploy Logs** — deve aparecer "All migrations have been successfully applied."
 
 **Preciso trocar o JWT_SECRET depois**

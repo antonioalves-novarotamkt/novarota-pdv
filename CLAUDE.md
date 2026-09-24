@@ -144,13 +144,19 @@ cd frontend && npm run dev
 Frontend: http://localhost:5173  
 Backend: http://localhost:3000
 
-### Credenciais Demo
+### Credenciais Demo (só no banco local, criado pelo seed)
 - **Email**: demo@example.com
 - **Senha**: demo123
 
+## 🔑 Acesso (conta única)
+
+- O sistema tem **um único usuário**: `aasilva72@gmail.com`. Não existe cadastro público nem "esqueci minha senha".
+- O usuário é criado pela migration `20260924174500_admin_user` (INSERT ... ON CONFLICT: cria, ou redefine a senha se o email já existir). O arquivo guarda só o hash bcrypt.
+- **Para trocar a senha:** gere uma senha nova, calcule o hash com `bcryptjs.hashSync(senha, 12)` e crie uma **nova** migration com o mesmo `INSERT ... ON CONFLICT`. Nunca edite uma migration já aplicada.
+
 ## ✅ Implementado
 
-- [x] Autenticação JWT (register, login)
+- [x] Autenticação JWT (login; conta única, sem cadastro público)
 - [x] CRUD de clientes (multi-tenant)
 - [x] CRUD de produtos com cálculo automático de preço
 - [x] Frontend: Login, Dashboard, Detalhes do Cliente, Formulário de Produtos
@@ -164,11 +170,6 @@ Backend: http://localhost:3000
   - Tudo ou nada: se uma linha tiver erro, nada é gravado e a resposta traz `details: [{row, message}]`
   - Correspondência: pelo Código (SKU) quando preenchido, senão pelo nome. Célula vazia de SKU não apaga o código existente
   - O SKU é único por cliente (`@@unique([clientId, sku])`), não no sistema inteiro
-- [x] Esqueci minha senha (`backend/src/services/password-reset.service.ts`, `backend/src/utils/mailer.ts`)
-  - `POST /api/auth/forgot-password` sempre responde igual e envia o email sem `await`, para não revelar quais emails existem
-  - `POST /api/auth/reset-password`: link vale 1 hora, uso único; o banco guarda só o SHA-256 do token
-  - SMTP via nodemailer com as mesmas variáveis do NovaRotaAdm (`EMAIL_SERVER_*`, `EMAIL_FROM`) + `APP_URL` para montar o link
-  - Sem SMTP configurado, em desenvolvimento o link é impresso no log do servidor
 
 ## 📋 Próximos Passos
 

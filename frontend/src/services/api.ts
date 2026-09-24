@@ -56,31 +56,12 @@ class ApiClient {
   }
 
   // Auth
-  async register(email: string, password: string, name: string) {
-    const response = await this.client.post('/auth/register', {
-      email,
-      password,
-      name,
-    });
-    return response.data;
-  }
-
   async login(email: string, password: string) {
     const response = await this.client.post('/auth/login', {
       email,
       password,
     });
     return response.data;
-  }
-
-  async forgotPassword(email: string): Promise<string> {
-    const response = await this.client.post('/auth/forgot-password', { email });
-    return response.data.message;
-  }
-
-  async resetPassword(token: string, password: string): Promise<string> {
-    const response = await this.client.post('/auth/reset-password', { token, password });
-    return response.data.message;
   }
 
   // Clients

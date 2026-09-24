@@ -3,8 +3,6 @@ import { useAuthStore } from './store/auth';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ClientPage } from './pages/ClientPage';
-import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
-import { ResetPasswordPage } from './pages/ResetPasswordPage';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isLoggedIn } = useAuthStore();
@@ -16,8 +14,6 @@ function App() {
     <Router>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/esqueci-senha" element={<ForgotPasswordPage />} />
-        <Route path="/redefinir-senha/:token" element={<ResetPasswordPage />} />
         <Route
           path="/dashboard"
           element={
