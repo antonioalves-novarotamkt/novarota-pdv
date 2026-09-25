@@ -4,6 +4,7 @@ import authRoutes from './routes/auth.routes.js';
 import clientsRoutes from './routes/clients.routes.js';
 import productsRoutes from './routes/products.routes.js';
 import excelRoutes from './routes/excel.routes.js';
+import imagesRoutes from './routes/images.routes.js';
 
 const allowedOrigins = ENV.CORS_ORIGIN.split(',')
   .map((origin) => origin.trim().replace(/\/+$/, ''))
@@ -40,6 +41,7 @@ export function createApp() {
   app.use('/api/clients', clientsRoutes);
   app.use('/api/clients', productsRoutes);
   app.use('/api/clients', excelRoutes);
+  app.use('/api/images', imagesRoutes);
 
   // 404
   app.use((req, res) => {

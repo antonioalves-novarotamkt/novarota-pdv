@@ -3,6 +3,7 @@ import multer from 'multer';
 import { authMiddleware } from '../middleware/auth.js';
 import { clientAccessMiddleware } from '../middleware/clientAccess.js';
 import { exportProducts, importProducts, ImportValidationError } from '../services/excel.service.js';
+import { downloadGoogleSheet } from '../services/google-sheets.service.js';
 
 const router = Router();
 
@@ -65,6 +66,29 @@ router.post(
         return res.status(400).json({ error: error.message, details: error.details });
       }
       console.error('Excel import failed:', error);
+      res.status(500).json({ error: 'Não foi possível importar a planilha.' });
+    }
+  }
+);
+
+router.post(
+  '/:clientId/import/google-sheets',
+  authMiddleware,
+  clientAccessMiddleware,
+  async (req: Request, res: Response) => {
+    const url = typeof req.body.url === 'string' ? req.body.url : '';
+    if (!url.trim()) {
+      return res.status(400).json({ error: 'Cole o link da planilha.' });
+    }
+    try {
+      const buffer = await downloadGoogleSheet(url);
+      const result = await importProducts(req.params.clientId, buffer);
+      res.json({ data: result });
+    } catch (error) {
+      if (error instanceof ImportValidationError) {
+        return res.status(400).json({ error: error.message, details: error.details });
+      }
+      console.error('Google Sheets import failed:', error);
       res.status(500).json({ error: 'Não foi possível importar a planilha.' });
     }
   }

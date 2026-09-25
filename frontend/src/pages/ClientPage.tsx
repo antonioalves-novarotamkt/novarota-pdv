@@ -4,6 +4,8 @@ import { ArrowLeft, Plus, Pencil, Trash2, UtensilsCrossed } from 'lucide-react';
 import { apiClient } from '../services/api';
 import { AppLayout } from '../components/AppLayout';
 import { ExcelActions } from '../components/ExcelActions';
+import { MarkupSettings } from '../components/MarkupSettings';
+import { ProductPhoto } from '../components/ProductPhoto';
 
 interface Product {
   id: string;
@@ -15,7 +17,7 @@ interface Product {
   finalPrice: number;
   active: boolean;
   category?: { id: string; name: string };
-  images: unknown[];
+  images: { id: string; url: string }[];
 }
 
 const emptyForm = { name: '', description: '', basePrice: '', markup: '30', categoryId: '' };
@@ -28,7 +30,7 @@ const brl = (value: number) =>
 
 export function ClientPage() {
   const { clientId } = useParams<{ clientId: string }>();
-  const [client, setClient] = useState<{ name: string } | null>(null);
+  const [client, setClient] = useState<{ name: string; defaultMarkup: number } | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -133,13 +135,29 @@ export function ClientPage() {
           <p className="text-sm text-slate-500">Cardápio e precificação</p>
         </div>
         <button
-          onClick={() => (showForm ? resetForm() : setShowForm(true))}
+          onClick={() => {
+            if (showForm) return resetForm();
+            setFormData({ ...emptyForm, markup: String(client?.defaultMarkup ?? 30) });
+            setShowForm(true);
+          }}
           className="flex items-center gap-2 rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700"
         >
           <Plus className="h-4 w-4" />
           Novo produto
         </button>
       </div>
+
+      {clientId && client && (
+        <MarkupSettings
+          clientId={clientId}
+          currentMarkup={client.defaultMarkup}
+          productCount={products.length}
+          onApplied={() => {
+            loadClient();
+            loadProducts();
+          }}
+        />
+      )}
 
       {clientId && <ExcelActions clientId={clientId} onImported={loadProducts} />}
 
@@ -225,6 +243,13 @@ export function ClientPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {products.map((product) => (
             <div key={product.id} className="flex flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <ProductPhoto
+                clientId={clientId!}
+                productId={product.id}
+                productName={product.name}
+                imageUrl={product.images[0]?.url}
+                onChanged={loadProducts}
+              />
               <div className="flex items-start justify-between gap-2">
                 <h3 className="font-semibold">{product.name}</h3>
                 {!product.active && (

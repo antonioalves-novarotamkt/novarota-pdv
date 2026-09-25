@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { prisma } from '../db/prisma.js';
 import { calculateFinalPrice } from '../utils/pricing.js';
 
@@ -13,8 +14,19 @@ export interface CreateProductInput {
 
 export interface UpdateProductInput extends Partial<CreateProductInput> {}
 
+// Never select ProductImage.data here: it holds the image bytes.
+const productInclude = {
+  category: true,
+  images: { select: { id: true, url: true, order: true }, orderBy: { order: 'asc' as const } },
+  channelPrices: true,
+};
+
 export async function createProduct(clientId: string, input: CreateProductInput) {
-  const markup = input.markup ?? 30;
+  let markup = input.markup;
+  if (markup === undefined) {
+    const client = await prisma.client.findUniqueOrThrow({ where: { id: clientId } });
+    markup = client.defaultMarkup;
+  }
   const finalPrice = calculateFinalPrice(input.basePrice, markup);
 
   if (input.sku) {
@@ -38,11 +50,7 @@ export async function createProduct(clientId: string, input: CreateProductInput)
       active: input.active ?? true,
       clientId,
     },
-    include: {
-      category: true,
-      images: { orderBy: { order: 'asc' } },
-      channelPrices: true,
-    },
+    include: productInclude,
   });
 }
 
@@ -52,11 +60,7 @@ export async function getProducts(clientId: string, categoryId?: string) {
       clientId,
       categoryId: categoryId || undefined,
     },
-    include: {
-      category: true,
-      images: { orderBy: { order: 'asc' } },
-      channelPrices: true,
-    },
+    include: productInclude,
     orderBy: { createdAt: 'desc' },
   });
 }
@@ -64,11 +68,7 @@ export async function getProducts(clientId: string, categoryId?: string) {
 export async function getProductById(productId: string, clientId: string) {
   return prisma.product.findFirst({
     where: { id: productId, clientId },
-    include: {
-      category: true,
-      images: { orderBy: { order: 'asc' } },
-      channelPrices: true,
-    },
+    include: productInclude,
   });
 }
 
@@ -97,11 +97,7 @@ export async function updateProduct(
       categoryId: input.categoryId,
       active: input.active,
     },
-    include: {
-      category: true,
-      images: { orderBy: { order: 'asc' } },
-      channelPrices: true,
-    },
+    include: productInclude,
   });
 }
 
@@ -113,5 +109,64 @@ export async function deleteProduct(productId: string, clientId: string) {
 
   return prisma.product.delete({
     where: { id: productId },
+  });
+}
+
+export async function applyMarkupToAll(clientId: string, markup: number) {
+  return prisma.$transaction(async (tx) => {
+    await tx.client.update({ where: { id: clientId }, data: { defaultMarkup: markup } });
+    // Same rounding as calculateFinalPrice (2 decimal places), done in SQL to update all rows at once.
+    const updated = await tx.$executeRaw`
+      UPDATE "products"
+      SET "markup" = ${markup},
+          "finalPrice" = ROUND(("basePrice" * (1 + ${markup}::double precision / 100))::numeric, 2)::double precision,
+          "updatedAt" = NOW()
+      WHERE "clientId" = ${clientId}
+    `;
+    return { updated };
+  });
+}
+
+export async function setProductImage(
+  productId: string,
+  clientId: string,
+  image: { data: Buffer; mimeType: string }
+) {
+  const product = await getProductById(productId, clientId);
+  if (!product) {
+    throw new Error('Product not found');
+  }
+
+  const id = randomUUID();
+  await prisma.$transaction([
+    prisma.productImage.deleteMany({ where: { productId } }),
+    prisma.productImage.create({
+      data: {
+        id,
+        url: `/api/images/${id}`,
+        data: image.data,
+        mimeType: image.mimeType,
+        productId,
+        clientId,
+      },
+    }),
+  ]);
+
+  return getProductById(productId, clientId);
+}
+
+export async function removeProductImage(productId: string, clientId: string) {
+  const product = await getProductById(productId, clientId);
+  if (!product) {
+    throw new Error('Product not found');
+  }
+  await prisma.productImage.deleteMany({ where: { productId } });
+  return getProductById(productId, clientId);
+}
+
+export async function getImage(imageId: string) {
+  return prisma.productImage.findUnique({
+    where: { id: imageId },
+    select: { data: true, mimeType: true },
   });
 }

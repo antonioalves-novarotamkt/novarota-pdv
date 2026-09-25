@@ -30,6 +30,7 @@ model Client {
   email     String
   phone     String?
   logo      String?  // URL da logo
+  defaultMarkup Float @default(30) // Acréscimo geral (%), aplicado a todo o cardápio
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -93,7 +94,9 @@ model Product {
 // Imagem do Produto
 model ProductImage {
   id        String   @id @default(cuid())
-  url       String   // URL ou caminho do arquivo
+  url       String   // Caminho público da imagem (/api/images/:id)
+  data      Bytes?   // Arquivo da imagem. Nunca carregar em listagens: use select sem este campo.
+  mimeType  String?
   order     Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
