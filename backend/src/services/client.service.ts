@@ -7,19 +7,34 @@ export interface CreateClientInput {
   phone?: string;
 }
 
+// "Comida Brasileira!" -> "comida-brasileira". The slug is used in URLs and export file names.
+export function toSlug(text: string) {
+  return text
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 export async function createClient(userId: string, input: CreateClientInput) {
+  const slug = toSlug(input.slug || input.name);
+  if (!slug) {
+    throw new Error('Informe um identificador com letras ou números.');
+  }
+
   const existing = await prisma.client.findUnique({
-    where: { slug: input.slug },
+    where: { slug },
   });
 
   if (existing) {
-    throw new Error('Slug already exists');
+    throw new Error('Já existe um cliente com este identificador. Use outro.');
   }
 
   const client = await prisma.client.create({
     data: {
       name: input.name,
-      slug: input.slug,
+      slug,
       email: input.email,
       phone: input.phone,
       userId,
